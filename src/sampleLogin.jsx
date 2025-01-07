@@ -34,17 +34,18 @@ function Login() {
 
     return (
         <div className="bg-[linear-gradient(to_bottom,#A2BBF1,#D3A4DD)] flex items-center justify-center h-screen">
-            <div className=" p-10 rounded-3xl shadow-md" style={{ width: '500px', height: '450px',backgroundColor: '#5882C1'} }>
+            <div className=" px-20 py-10 rounded-3xl shadow-md" style={{ width: '500px', height: '500px',backgroundColor: '#5882C1'} }>
                 <div className='relative z-10'> 
             
             
                     <img
                     src="public/naysa LOGO.png" // Replace with the actual path to your logo image
                     alt="Logo"
-                    className="w-200 h-20" // Adjust size and centering
+                    className="w-200 h-20 mb-1" // Adjust size and centering
                     />
-                    <h2 className="text-2xl font-bold mb-6 text-white">Welcome Back</h2>
-                    <form onSubmit={handleSubmit}>
+                    <h2 className="text-2xl font-bold mb-8 text-white font-sfProRounded" style={{ fontFamily: 'Roboto, sans-serif' }}>Welcome Back</h2>
+
+                    <form  onSubmit={handleSubmit}>
                     
                         <div className="mb-4">
                             <label htmlFor="name" className="block text-sm font-medium text-gray-700">Email</label> 

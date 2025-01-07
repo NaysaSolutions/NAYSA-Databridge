@@ -6,6 +6,9 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sfProRounded: ['SF Pro Rounded', 'sans-serif'],
+      },
       animation: {
         gradient: 'gradient 4s ease infinite', // Define the animation
       },
@@ -33,4 +36,6 @@ export default {
     },
   },
   plugins: [],
+
+
 };
