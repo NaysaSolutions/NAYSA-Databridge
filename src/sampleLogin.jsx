@@ -34,7 +34,7 @@ function Login() {
 
     return (
         <div className="bg-gray-100 flex items-center justify-center h-screen">
-            <div className="bg-white p-8 rounded shadow-md w-96">
+            <div className="bg-white p-8 rounded-lg shadow-md w-96 ">
                 <h2 className="text-2xl font-bold mb-6 text-center">Login</h2>
                 <form onSubmit={handleSubmit}>
                     
@@ -65,10 +65,10 @@ function Login() {
                     </div>
                     <button 
                         type="submit" 
-                        className="w-full bg-blue-500 text-white p-3 rounded" 
+                        className="w-full bg-blue-900 text-white p-3 rounded" 
                         disabled={loading}
                     >
-                        {loading ? 'Logging in...' : 'Login'}
+                        {loading ? 'Signing in...' : 'Sign In'}
                     </button>
                 </form>
             </div>
