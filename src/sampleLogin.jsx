@@ -43,7 +43,7 @@ function Login() {
                     className="absolute inset-0 rounded-3xl"
                     style={{
                         backgroundColor: '#5882C1',
-                        opacity: 0.75,
+                        opacity: 0.5,
                         zIndex: 0,
                     }}
                 ></div>
@@ -53,13 +53,20 @@ function Login() {
                     <img
                         src="public/naysa LOGO.png"
                         alt="Logo"
-                        className="w-200 h-20 mb-1"
+                        className="w-200 h-20 mb-3"
                     />
+                    
+                    <h2
+                        className="text-white"
+                        style={{ fontFamily: 'Roboto, sans-serif' }}
+                    >
+                        NAYSA Databridge
+                    </h2>
                     <h2
                         className="text-2xl font-bold mb-8 text-white font-sfProRounded"
                         style={{ fontFamily: 'Roboto, sans-serif' }}
                     >
-                        Welcome Back
+                        Welcome Back!
                     </h2>
     
                     <form onSubmit={handleSubmit}>
@@ -77,6 +84,8 @@ function Login() {
                                 value={formData.name}
                                 onChange={handleChange}
                                 required
+                                placeholder="email@gmail.com"
+
                                 className="mt-1 p-2 w-full border rounded"
                             />
                         </div>
@@ -100,10 +109,10 @@ function Login() {
                         </div>
                         <button
                             type="submit"
-                            className="w-full bg-blue-500 text-white p-3 rounded"
+                            className="w-full bg-black text-white p-3 rounded-lg"
                             disabled={loading}
                         >
-                            {loading ? 'Logging in...' : 'Login'}
+                            {loading ? 'Sign in...' : 'Sign In'}
                         </button>
     
                         <span className="text-white flex items-center justify-center mt-5 mb-5">
