@@ -37,27 +37,13 @@ function Login() {
             <div className="bg-white p-8 rounded shadow-md w-96">
                 <h2 className="text-2xl font-bold mb-6 text-center">Login</h2>
                 <form onSubmit={handleSubmit}>
+                    
                     <div className="mb-4">
-                        <label htmlFor="company" className="block text-sm font-medium text-gray-700">Company</label>
-                        <select 
-                            id="company" 
-                            name="company" 
-                            value={formData.company} 
-                            onChange={handleChange} 
-                            required 
-                            className="mt-1 p-2 w-full border rounded"
-                        >
-                            <option value="">Select a company</option>
-                            <option value="abc company">ABC Company</option>
-                            <option value="company abc">Company ABC</option>
-                        </select>
-                    </div>
-                    <div className="mb-4">
-                        <label htmlFor="name" className="block text-sm font-medium text-gray-700">Name</label> 
+                        <label htmlFor="name" className="block text-sm font-medium text-gray-700">Email</label> 
                         <input 
                             type="text" 
-                            id="name" 
-                            name="name" 
+                            id="email" 
+                            name="email" 
                             value={formData.name} 
                             onChange={handleChange} 
                             required 
@@ -72,6 +58,7 @@ function Login() {
                             name="password" 
                             value={formData.password} 
                             onChange={handleChange} 
+                            placeholder='at least 8 characters'
                             required 
                             className="mt-1 p-2 w-full border rounded" 
                         />
