@@ -26,7 +26,7 @@
 
 
 import React from 'react';
-import Sample from './Auth/sampleLogin';
+import Sample from './sampleLogin';
 
 function App() {
   return <Sample />;
