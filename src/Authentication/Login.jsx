@@ -1,44 +1,45 @@
-import React, { useState } from 'react';
+import React, { useState } from 'react'; 
 import axios from 'axios';
+import { useNavigate, Link } from 'react-router-dom';
+import Swal from 'sweetalert2';
 
 function Login() {
     const [formData, setFormData] = useState({
-        company: '',
-        name: '', 
+        email: '', 
         password: ''
     });
-    const [result, setResult] = useState('');
     const [loading, setLoading] = useState(false);
+    const navigate = useNavigate(); // For navigation
 
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData({ ...formData, [name]: value });
     };
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = (e) => {
         e.preventDefault();
         console.log('Form Data:', formData);
-
-        setLoading(true);  
-        try {
-            const response = await axios.post('http://localhost:8000/api/login', formData);
-            alert('Login successful!');
-            setResult(response.data.company); 
-        } catch (error) {
-            alert('Login failed. Please check your credentials.');
-            console.error('Login failed: ', error);
-        } finally {
-            setLoading(false); 
-        }
+    
+        setLoading(true);
+    
+        Swal.fire({
+            title: 'Login successful!',
+            icon: 'success',
+            confirmButtonText: 'OK',
+        }).then(() => {
+            navigate('/dashboard');
+        });
+    
+        setLoading(false); // Reset loading state after navigating
     };
+    
 
     return (
         <div className="bg-[linear-gradient(to_bottom,#A2BBF1,#D3A4DD)] flex items-center justify-center h-screen">
             <div
                 className="relative px-20 py-10 rounded-3xl shadow-md"
-                style={{ width: '500px', height: '500px', position: 'relative' }}
+                style={{ width: '530px', height: '565px', position: 'relative' }}
             >
-                {/* Background Overlay */}
                 <div
                     className="absolute inset-0 rounded-3xl"
                     style={{
@@ -48,7 +49,6 @@ function Login() {
                     }}
                 ></div>
     
-                {/* Card Content */}
                 <div className="relative z-10">
                     <img
                         src="public/naysa LOGO.png"
@@ -57,14 +57,14 @@ function Login() {
                     />
                     
                     <h2
-                        className="text-white"
-                        style={{ fontFamily: 'Roboto, sans-serif' }}
+                        className="text-white m-1"
+                        style={{ fontFamily: 'SF Pro Rounded, sans-serif' }}
                     >
                         NAYSA Databridge
                     </h2>
                     <h2
-                        className="text-2xl font-bold mb-8 text-white font-sfProRounded"
-                        style={{ fontFamily: 'Roboto, sans-serif' }}
+                        className="text-4xl font-bold mb-5 text-white "
+                        style={{ fontFamily: 'SF Pro Rounded, sans-serif' }}
                     >
                         Welcome Back!
                     </h2>
@@ -73,7 +73,7 @@ function Login() {
                         <div className="mb-4">
                             <label
                                 htmlFor="name"
-                                className="block text-sm font-medium text-gray-700"
+                                className="block text-base font-normal text-gray-700"
                             >
                                 Email
                             </label>
@@ -85,14 +85,13 @@ function Login() {
                                 onChange={handleChange}
                                 required
                                 placeholder="email@gmail.com"
-
-                                className="mt-1 p-2 w-full border rounded"
+                                className="mt-1 p-2 w-[380px] h-[45px] border-[1px] rounded-[12px]"
                             />
                         </div>
-                        <div className="mb-6">
+                        <div className="mb-4">
                             <label
                                 htmlFor="password"
-                                className="block text-sm font-medium text-gray-700"
+                                className="block text-base font-normal text-gray-700"
                             >
                                 Password
                             </label>
@@ -104,18 +103,31 @@ function Login() {
                                 onChange={handleChange}
                                 placeholder="at least 8 characters"
                                 required
-                                className="mt-1 p-2 w-full border rounded"
+                                className="mt-1 p-2 w-[380px] h-[45px] border-[1px] rounded-[12px]"
                             />
+                        </div>
+                        <div className="text-right mt-2 mb-4">
+                            <Link to="/forgot-password" className="text-sm text-white hover:underline">Forgot Password?</Link>
                         </div>
                         <button
                             type="submit"
-                            className="w-full bg-black text-white p-3 rounded-lg"
+                            className="w-full bg-[#162e3a] text-base text-white p-3 rounded-lg"
                             disabled={loading}
                         >
                             {loading ? 'Sign in...' : 'Sign In'}
                         </button>
+
+                        <div className="text-center mt-5 flex justify-center items-center">
+                            <span className="text-sm text-gray-300">Don't have an account?&nbsp;</span>
+                            <span
+                                className="text-sm text-white hover:underline cursor-pointer"
+                                onClick={() => navigate('/register')}
+                            >
+                            Sign up
+                            </span>
+                        </div>
     
-                        <span className="text-white flex items-center justify-center mt-5 mb-5">
+                        <span className="text-white text-xs flex items-center justify-center mt-2 mb-2">
                             © 2025 ALL RIGHTS RESERVED
                         </span>
                     </form>
@@ -123,7 +135,6 @@ function Login() {
             </div>
         </div>
     );
-    
 }
 
 export default Login;

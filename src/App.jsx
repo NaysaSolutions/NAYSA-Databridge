@@ -26,13 +26,37 @@
 
 
 import React from 'react';
-import Sample from './sampleLogin';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Login from './Authentication/Login';
+import Register from './Authentication/Register';
+import Layout from './Layout'; 
+import Dashboard from './Components/Dashboard';
+import ForgotPassword from './Authentication/ForgotPassword'; // Import the ForgotPassword component
 
 function App() {
-  return <Sample />;
+  return (
+    <Router>
+      <Routes>
+        {/* Route for Login */}
+        <Route path="/" element={<Login />} />
+        
+        {/* Route for Register */}
+        <Route path="/register" element={<Register />} />
+
+        {/* Route for Forgot Password */}
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+
+        {/* Route for Dashboard inside Layout */}
+        <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
+      </Routes>
+    </Router>
+  );
 }
 
 export default App;
+
+
+
 
 
 // import React from 'react';
