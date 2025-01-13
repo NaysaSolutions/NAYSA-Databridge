@@ -24,7 +24,6 @@ function ForgotPassword() {
                 confirmButtonText: 'OK',
             });
             
-            navigate('/dashboard');
         } catch (error) {
             // Handle error, for example if the email is not found
             await Swal.fire({
