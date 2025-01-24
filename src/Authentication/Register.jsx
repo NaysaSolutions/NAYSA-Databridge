@@ -1,37 +1,55 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import Swal from 'sweetalert2';
 
 function Register() {
     const [formData, setFormData] = useState({
-        company: '',
-        name: '',
+        username: '',
         email: '',
         password: ''
     });
     const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
 
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData({ ...formData, [name]: value });
     };
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = async (e) => { 
         e.preventDefault();
         console.log('Form Data:', formData);
-
+    
         setLoading(true);
         try {
             const response = await axios.post('http://localhost:8000/api/register', formData);
-            alert('Registration successful!');
+            
+            await Swal.fire({
+                title: 'Registration Successful!',
+                text: 'Your account has been created. Redirecting you to login...',
+                icon: 'success',
+                timer: 3000,
+                showConfirmButton: false,
+            });
+    
             console.log('Registration Response:', response.data);
+            
+            // Redirect to login page
+            navigate('/');
         } catch (error) {
-            alert('Registration failed. Please check your details.');
+            await Swal.fire({
+                title: 'Registration Failed!',
+                text: 'Please check your details and try again.',
+                icon: 'error',
+                confirmButtonText: 'OK',
+            });
             console.error('Registration failed: ', error);
         } finally {
             setLoading(false);
         }
     };
+    
 
     return (
         <div className="bg-[linear-gradient(to_bottom,#A2BBF1,#D3A4DD)] flex items-center justify-center h-screen">
@@ -79,8 +97,8 @@ function Register() {
                             </label>
                             <input
                                 type="text"
-                                id="name"
-                                name="name"
+                                id="username"
+                                name="username"
                                 value={formData.name}
                                 onChange={handleChange}
                                 required

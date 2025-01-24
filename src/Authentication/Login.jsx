@@ -16,22 +16,47 @@ function Login() {
         setFormData({ ...formData, [name]: value });
     };
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        console.log('Form Data:', formData);
+    const handleSubmit = async (e) => {
+        e.preventDefault(); 
+        console.log('Form Data:', formData); 
     
         setLoading(true);
     
-        Swal.fire({
-            title: 'Login successful!',
-            icon: 'success',
-            confirmButtonText: 'OK',
-        }).then(() => {
-            navigate('/dashboard');
-        });
+        try {
+            const response = await axios.post('http://localhost:8000/api/login', formData);
     
-        setLoading(false); // Reset loading state after navigating
+            if (response.data.status === 'success') {
+                await Swal.fire({
+                    title: 'Login successful!',
+                    icon: 'success',
+                    timer: 2000,
+                    confirmButtonText: 'OK',
+                });
+    
+                navigate('/dashboard');
+            } else {
+                await Swal.fire({
+                    title: 'Login failed!',
+                    text: response.data.message || 'Invalid credentials. Please try again.',
+                    icon: 'error',
+                    confirmButtonText: 'OK',
+                });
+            }
+        } catch (error) {
+            console.error('Login failed:', error);
+            await Swal.fire({
+                title: 'Error!',
+                text: 'An error occurred while trying to log in. Please try again later.',
+                icon: 'error',
+                confirmButtonText: 'OK',
+            });
+        } finally {
+            setLoading(false);
+        }
     };
+    
+
+    
     
 
     return (
