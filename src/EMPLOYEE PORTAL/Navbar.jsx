@@ -20,7 +20,7 @@ const Navbar = () => {
             className="w-[100px] h-[60px]"
             alt="Naysa Logo"
           />
-          <span className="text-[#0e00cb] font-bold text-xl mt-3">HRIS</span>
+          <span className="text-[#0e00cb] font-bold text-lg mt-3">Employee Portal</span>
         </div>
 
         {/* Navigation Links */}

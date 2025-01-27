@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import dayjs from "dayjs";
 import advancedFormat from "dayjs/plugin/advancedFormat";
 import Swal from "sweetalert2";
+import { useAuth } from "./AuthContext"; // Import AuthContext
 
 dayjs.extend(advancedFormat);
 
@@ -11,7 +12,59 @@ const Dashboard = () => {
   const [entryTime, setEntryTime] = useState(null); // Entry Time
   const [breakTime, setBreakTime] = useState(3600); // Default break time in seconds (1 hour)
   const [isCounting, setIsCounting] = useState(false); // Tracks whether the countdown is active
+  const [dailyTimeRecord, setDailyTimeRecord] = useState([]); // Store Daily Time Record
+  const [error, setError] = useState(null); // Error state
+  const { user } = useAuth(); // Get user data from AuthContext
 
+  // If no user is logged in, return an empty container
+  if (!user) {
+    return <div className="p-6">Loading...</div>;
+  }
+
+  useEffect(() => {
+    if (!user || !user.empNo) {
+      return; // Don't fetch if user or empNo is missing
+    }
+  
+    const fetchDailyRecords = async () => {
+      try {
+        const response = await fetch("http://127.0.0.1:8000/api/dashBoard", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ EMP_NO: user.empNo }),
+        });
+    
+        const result = await response.json();
+    
+        // Log the raw API response to verify it
+        console.log("Raw API Response:", result);
+    
+        // Check if we have valid data and parse the 'result' field
+        if (result.success && result.data && Array.isArray(result.data) && result.data.length > 0) {
+          // The 'result' field is a string, so we need to parse it
+          const parsedData = JSON.parse(result.data[0].result);
+          console.log("Parsed Daily Time Records:", parsedData);
+    
+          // Check if dailyTimeRecord exists and is an array
+          const dailyRecords = parsedData[0]?.dailyTimeRecord;
+    
+          if (dailyRecords && Array.isArray(dailyRecords)) {
+            setDailyTimeRecord(dailyRecords);
+          } else {
+            setError("No daily time records found.");
+          }
+        } else {
+          setError("API response format is incorrect or no data found.");
+        }
+      } catch (err) {
+        console.error("Error fetching daily time records:", err);
+        setError("An error occurred while fetching the records.");
+      }
+    };
+    
+    fetchDailyRecords();
+  }, [user.empNo]);  // This effect depends on user.empNo
+  
   // Current Date and Time
   useEffect(() => {
     const timer = setInterval(() => {
@@ -20,7 +73,7 @@ const Dashboard = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Countdown Timer
+  // Break Time Countdown
   useEffect(() => {
     let countdown;
     if (isCounting && breakTime > 0) {
@@ -31,13 +84,7 @@ const Dashboard = () => {
     if (breakTime <= 0) {
       clearInterval(countdown);
       setIsCounting(false);
-      // Show SweetAlert when break time is over
-      Swal.fire({
-        title: "Time's up!",
-        text: "You have exceeded the break time limit.",
-        icon: "warning",
-        confirmButtonText: "OK",
-      });
+      Swal.fire("Time's Up!", "Your break is over.", "warning");
     }
     return () => clearInterval(countdown);
   }, [isCounting, breakTime]);
@@ -50,14 +97,12 @@ const Dashboard = () => {
     setIsCounting(true);
   };
 
-  // Convert seconds to HH:MM:SS format
+  // Convert seconds to HH:MM:SS
   const formatTime = (seconds) => {
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
-    return `${hrs.toString().padStart(2, "0")}:${mins
-      .toString()
-      .padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+    return `${hrs.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
   // Personal Calendar Navigation
@@ -87,7 +132,6 @@ const Dashboard = () => {
     }
     return days;
   };
-
 
   return (
     <div className="ml-80 mt-[120px] p-6 bg-gray-100 min-h-screen">
@@ -144,34 +188,34 @@ const Dashboard = () => {
 
       {/* Main Content */}
       <div className="grid grid-cols-3 gap-5">
-        {/* Daily Time Record */}
-<div className="bg-white p-4 rounded-lg shadow h-[360px] w-[350px] flex flex-col">
-  <h2 className="text-lg font-semibold">Daily Time Record</h2>
-  <span className="text-gray-500 text-sm font-normal mt-4">Recent Transactions</span>
-  <div className="space-y-4 mt-5 flex-grow">
-    <div className="flex justify-between items-center border-b pb-2">
-      <div className="flex items-center space-x-4">
-        <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
-        <div>
-          <p className="text-sm font-semibold">January 2, 2023</p>
-          <p className="text-xs">Time In: 8:00 AM</p>
-          <p className="text-xs">Time Out: 5:30 PM</p>
+        {/* Daily Time Record Section */}
+        <div className="bg-white p-4 rounded-lg shadow h-[360px] w-[350px] flex flex-col">
+          <h2 className="text-lg font-semibold">Daily Time Record</h2>
+          <span className="text-gray-500 text-sm font-normal mt-4">Recent Transactions</span>
+
+          {error && <p className="text-sm text-red-500 mt-4">{error}</p>}
+
+          {/* Display Daily Time Records */}
+          <div className="space-y-4 mt-5 flex-grow overflow-y-auto">
+            {dailyTimeRecord.length > 0 ? (
+              dailyTimeRecord.map((record, index) => (
+                <div key={index} className="flex justify-between items-center border-b pb-2">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+                    <div>
+                      <p className="text-sm font-semibold">
+                        {dayjs(record.trandate).format("MMMM D, YYYY")}
+                      </p>
+                      <p className="text-xs">Time In: {record.time_in ? dayjs(record.time_in).format("hh:mm A") : "N/A"}</p>
+                      <p className="text-xs">Time Out: {record.time_out ? dayjs(record.time_out).format("hh:mm A") : "N/A"}</p>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-gray-600 mt-4">No records found.</p>
+            )}
         </div>
-      </div>
-      <p className="text-gray-500 text-sm">Monday</p>
-    </div>
-    <div className="flex justify-between items-center border-b pb-2">
-      <div className="flex items-center space-x-4">
-        <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
-        <div>
-          <p className="text-sm font-semibold">January 1, 2023</p>
-          <p className="text-xs">Time In: 9:00 AM</p>
-          <p className="text-xs">Time Out: 6:00 PM</p>
-        </div>
-      </div>
-      <p className="text-gray-500 text-sm">Sunday</p>
-    </div>
-  </div>
   <div className="flex justify-end mt-auto items-center">
     <span className="text-gray-500 cursor-pointer text-sm font-normal flex items-center">
       View All
