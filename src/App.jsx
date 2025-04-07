@@ -25,39 +25,31 @@
 //  export default App;
 
 
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Login from './Authentication/Login';
-import Register from './Authentication/Register';
-import Layout from './Layout'; 
-import Dashboard from './Components/Dashboard';
-import ForgotPassword from './Authentication/ForgotPassword';
-import Clients from './Components/Clients'; 
-import AddClients from './Components/AddClient';
+import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./Authentication/AuthContext"; // Import AuthProvider
+import Login from "./Authentication/Login";
+import Register from "./Authentication/Register";
+import Layout from "./Layout";
+import Dashboard from "./Components/Dashboard";
+import ForgotPassword from "./Authentication/ForgotPassword";
+import Clients from "./Components/Clients";
+import AddClients from "./Components/AddClient";
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        {/* Route for Login */}
-        <Route path="/" element={<Login />} />
-        
-        {/* Route for Register */}
-        <Route path="/register" element={<Register />} />
-
-        {/* Route for Forgot Password */}
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-
-        {/* Route for Dashboard inside Layout */}
-        <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
-
-        {/* Route for Clients inside Layout */}
-        <Route path="/clients" element={<Layout><Clients /></Layout>} />
-
-        {/* Route for Add Clients inside Layout */}
-        <Route path="/Addclients" element={<Layout><AddClients /></Layout>} />
-      </Routes>
-    </Router>
+    <AuthProvider> {/* Wrap everything inside AuthProvider */}
+      <Router>
+        <Routes>
+          <Route path="/" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
+          <Route path="/clients" element={<Layout><Clients /></Layout>} />
+          <Route path="/Addclients" element={<Layout><AddClients /></Layout>} />
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }
 

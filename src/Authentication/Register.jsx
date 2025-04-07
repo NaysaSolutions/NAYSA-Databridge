@@ -5,10 +5,12 @@ import Swal from 'sweetalert2';
 
 function Register() {
     const [formData, setFormData] = useState({
+        userId: '',  
         username: '',
         email: '',
         password: ''
     });
+
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
@@ -19,24 +21,26 @@ function Register() {
 
     const handleSubmit = async (e) => { 
         e.preventDefault();
-        console.log('Form Data:', formData);
+        console.log('Form Data:', formData); 
     
         setLoading(true);
         try {
-            const response = await axios.post('http://localhost:8000/api/register', formData);
+            const response = await axios.post('http://127.0.0.1:8000/api/register', formData);
             
+            // Ensure API returns userId correctly
+            const { userId } = response.data.user;  
+    
             await Swal.fire({
-                title: 'Registration Successful!',
-                text: 'Your account has been created. Redirecting you to login...',
+                title: `Registration Successful!`,
+                text: `Your account (User ID: ${userId}) has been created. Redirecting to login...`,
                 icon: 'success',
                 timer: 3000,
                 showConfirmButton: false,
             });
-    
+
             console.log('Registration Response:', response.data);
             
-            // Redirect to login page
-            navigate('/');
+            navigate('/'); // Redirect to login
         } catch (error) {
             await Swal.fire({
                 title: 'Registration Failed!',
@@ -49,57 +53,48 @@ function Register() {
             setLoading(false);
         }
     };
-    
+
 
     return (
         <div className="bg-[linear-gradient(to_bottom,#A2BBF1,#D3A4DD)] flex items-center justify-center h-screen">
-            <div
-                className="relative px-20 py-10 rounded-3xl shadow-md"
-                style={{ width: '530px', height: '600px', position: 'relative' }}
-            >
-                <div
-                    className="absolute inset-0 rounded-3xl"
-                    style={{
-                        backgroundColor: '#5882C1',
-                        opacity: 0.5,
-                        zIndex: 0,
-                    }}
-                ></div>
+            <div className="relative px-20 py-10 rounded-3xl shadow-md" style={{ width: '530px', height: '700px', position: 'relative' }}>
+                <div className="absolute inset-0 rounded-3xl" style={{ backgroundColor: '#5882C1', opacity: 0.5, zIndex: 0 }}></div>
 
                 <div className="relative z-10">
-                    <img
-                        src="public/naysa LOGO.png"
-                        alt="Logo"
-                        className="w-200 h-20 mb-3"
-                    />
+                    <img src="public/naysa LOGO.png" alt="Logo" className="w-200 h-20 mb-3" />
 
-                    <h2
-                        className="text-white m-1"
-                        style={{ fontFamily: 'SF Pro Rounded, sans-serif' }}
-                    >
+                    <h2 className="text-white m-1" style={{ fontFamily: 'SF Pro Rounded, sans-serif' }}>
                         NAYSA Databridge
                     </h2>
-                    <h2
-                        className="text-4xl font-bold mb-5 text-white"
-                        style={{ fontFamily: 'SF Pro Rounded, sans-serif' }}
-                    >
+                    <h2 className="text-4xl font-bold mb-5 text-white" style={{ fontFamily: 'SF Pro Rounded, sans-serif' }}>
                         Create Your Account
                     </h2>
 
                     <form onSubmit={handleSubmit}>
-                       
                         <div className="mb-3">
-                            <label
-                                htmlFor="name"
-                                className="block text-base font-normal text-gray-700"
-                            >
+                            <label htmlFor="userId" className="block text-base font-normal text-gray-700">
+                                User ID
+                            </label>
+                            <input
+                                type="text"
+                                id="userId"
+                                name="userId"
+                                value={formData.userId}
+                                onChange={handleChange}
+                                required
+                                placeholder="Enter your User ID"
+                                className="mt-1 p-2 w-[380px] h-[45px] border-[1px] rounded-[12px]"
+                            />
+                        </div>
+                        <div className="mb-3">
+                            <label htmlFor="username" className="block text-base font-normal text-gray-700">
                                 Username
                             </label>
                             <input
                                 type="text"
                                 id="username"
                                 name="username"
-                                value={formData.name}
+                                value={formData.username} // FIXED: Use formData.username instead of formData.name
                                 onChange={handleChange}
                                 required
                                 placeholder="Enter your username"
@@ -107,10 +102,7 @@ function Register() {
                             />
                         </div>
                         <div className="mb-3">
-                            <label
-                                htmlFor="email"
-                                className="block text-base font-normal text-gray-700"
-                            >
+                            <label htmlFor="email" className="block text-base font-normal text-gray-700">
                                 Email
                             </label>
                             <input
@@ -124,11 +116,8 @@ function Register() {
                                 className="mt-1 p-2 w-[380px] h-[45px] border-[1px] rounded-[12px]"
                             />
                         </div>
-                        <div className="mb-3">
-                            <label
-                                htmlFor="password"
-                                className="block text-base font-normal text-gray-700"
-                            >
+                        <div className="mb-5">
+                            <label htmlFor="password" className="block text-base font-normal text-gray-700">
                                 Password
                             </label>
                             <input
@@ -142,11 +131,7 @@ function Register() {
                                 className="mt-1 p-2 w-[380px] h-[45px] border-[1px] rounded-[12px]"
                             />
                         </div>
-                        <button
-                            type="submit"
-                            className="w-full bg-[#162e3a] text-base text-white p-3 rounded-lg"
-                            disabled={loading}
-                        >
+                        <button type="submit" className="w-full bg-[#162e3a] text-base text-white p-3 rounded-lg" disabled={loading}>
                             {loading ? 'Registering...' : 'Register'}
                         </button>
 
