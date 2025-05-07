@@ -94,7 +94,7 @@ function Register() {
                                 type="text"
                                 id="username"
                                 name="username"
-                                value={formData.username} // FIXED: Use formData.username instead of formData.name
+                                value={formData.username} 
                                 onChange={handleChange}
                                 required
                                 placeholder="Enter your username"

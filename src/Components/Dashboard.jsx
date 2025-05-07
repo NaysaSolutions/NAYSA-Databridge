@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faBell, faUser, faSignOutAlt, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faBell, faUser, faSignOutAlt } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "../Authentication/AuthContext";
 import { useNavigate } from "react-router-dom";
+import ClientLookupModal from "./ClientLookupModal"; // Import the new modal component
 
 const Dashboard = () => {
-  const { user, logout } = useAuth(); // Assuming logout function is available
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [clients, setClients] = useState([]);
@@ -20,7 +21,7 @@ const Dashboard = () => {
 
   const fetchClients = async () => {
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/getClients", {
+      const response = await fetch("https://api.nemarph.com:81/api/getClients", {
         headers: { Accept: "application/json" },
       });
 
@@ -41,7 +42,7 @@ const Dashboard = () => {
   };
 
   const handleLogout = () => {
-    logout(); // Assuming logout function clears auth state
+    logout();
     navigate("/");
   };
 
@@ -104,48 +105,12 @@ const Dashboard = () => {
           )}
         </div>
 
-        {/* Modal for All Clients */}
-        {isModalOpen && (
-  <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">
-    <div className="bg-white p-6 ml-[17%] rounded-lg shadow-lg w-[82%] max-h-[85vh] relative">
-      <button
-        onClick={() => setIsModalOpen(false)}
-        className="absolute top-3 right-2 text-gray-600 hover:text-red-600 transition duration-200"
-      >
-        <FontAwesomeIcon icon={faTimes} className="w-7 h-7" />
-      </button>
-      <h3 className="text-2xl font-bold mb-4">All Clients</h3>
-      
-      {/* Scrollable table container */}
-      <div className="overflow-y-auto max-h-[70vh]">
-        <table className="min-w-full border-collapse border border-gray-300">
-          <thead className="bg-gray-200 sticky top-0">
-            <tr>
-              {[
-                "Client Code", "Client Name", "Main Address", "Contract Date", "CAS",
-                "User License", "Training Days", "SMA Days", "Post Training Days",
-                "Live", "With SMA?", "FS Live?"
-              ].map((header, idx) => (
-                <th key={idx} className="px-4 py-2 border text-center">{header}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {allClients.map((client, index) => (
-              <tr key={index} className="border">
-                {["client_code", "client_name", "main_address", "contract_date", "cas", "user_license", "training_days", "sma_days", "post_training_days", "live", "with_sma", "fs_live"].map((field, i) => (
-                  <td key={i} className="px-4 py-2 border text-center">
-                    {client[field] || (typeof client[field] === "boolean" ? (client[field] ? "Yes" : "No") : "N/A")}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Client Lookup Modal */}
+        <ClientLookupModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          clients={allClients}
+        />
       </main>
     </div>
   );

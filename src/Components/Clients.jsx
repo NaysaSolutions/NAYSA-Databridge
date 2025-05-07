@@ -37,7 +37,7 @@ const ClientsInformation = () => {
 
   const fetchClients = async () => {
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/getClients", {
+      const response = await fetch("https://api.nemarph.com:81/api/getClients", {
         headers: { Accept: "application/json" },
       });
 
