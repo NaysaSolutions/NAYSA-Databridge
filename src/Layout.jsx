@@ -1,15 +1,37 @@
-// Layout.jsx
-import React from 'react';
+import React, { useState } from 'react';
 import Sidebar from './Components/Sidebar';
-import Dashboard from './Components/Dashboard';
+import AddClientForm from './Components/AddClient';
 
 const Layout = ({ children }) => {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [showAddClientForm, setShowAddClientForm] = useState(false);
+  const [currentSection, setCurrentSection] = useState(false);
+
   return (
     <div className="flex h-screen">
-      {/* Global Sidebar */}
-      <Sidebar />
+      {/* Sidebar */}
+      <Sidebar
+        isOpen={isSidebarOpen}
+        setIsOpen={setIsSidebarOpen}
+        onAddClient={() => {
+          setShowAddClientForm(true);
+          setCurrentSection('add-client');
+        }}
+        closeAddClientForm={() => {
+          setShowAddClientForm(false);
+          setCurrentSection(false);
+        }}
+        currentSection={currentSection}
+      />
+
       {/* Main Content */}
-      <div className="flex-1">{children}</div>
+      <div
+        className={`transition-all duration-300 p-2 bg-blue-50 font-poppins min-h-screen w-full ${
+          isSidebarOpen ? 'ml-64' : 'ml-20'
+        }`}
+      >
+        {showAddClientForm ? <AddClientForm /> : children}
+      </div>
     </div>
   );
 };

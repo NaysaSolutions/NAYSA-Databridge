@@ -21,7 +21,7 @@ const Dashboard = () => {
 
   const fetchClients = async () => {
     try {
-      const response = await fetch("http://192.168.1.201:82/api/getClients", {
+      const response = await fetch("http://192.168.56.1:82/api/getClients", {
         headers: { Accept: "application/json" },
       });
 
@@ -46,10 +46,11 @@ const Dashboard = () => {
     navigate("/");
   };
 
+
   return (
-    <div className="flex h-screen font-poppins ml-64">
-      <main className="flex-1 p-6 bg-gray-50">
-        <div className="relative flex-1 p-6 bg-gray-50">
+    <div className="flex h-screen font-poppins">
+      <main className="flex-1 p-4 bg-blue-50">
+        <div className="relative flex-1 p-2 bg-blue-50">
           {/* Top Right Icons */}
           <div className="absolute top-0 right-0 flex items-center space-x-4">
             <FontAwesomeIcon icon={faBell} className="w-5 h-5 text-gray-500 cursor-pointer" />

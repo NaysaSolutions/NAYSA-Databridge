@@ -21,7 +21,7 @@ const handleSubmit = async (e) => {
     setLoading(true);
   
     try {
-      const response = await axios.post("http://192.168.1.201:82/api/loginDB", formData);
+      const response = await axios.post("http://192.168.56.1:82/api/loginDB", formData);
   
       if (response.data.status === "success") {
         const userData = response.data.user;

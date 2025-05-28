@@ -8,6 +8,7 @@ import Swal from 'sweetalert2';
 import bcrypt from 'bcryptjs';
 import { Eye, EyeOff } from 'lucide-react'
 import { FaTrash, FaDownload, FaEye } from 'react-icons/fa';
+import Layout from "../Layout";
 
 import FileUpload from "./FileUpload";
 
@@ -179,7 +180,7 @@ useEffect(() => {
     try {
       const apiBase = process.env.NODE_ENV === 'development' 
         ? 'http://192.168.150.1:82/api' 
-        : 'http://192.168.1.201:82/api';
+        : 'http://192.168.56.1:82/api';
 
       const [csResponse, toResponse, smaResponse] = await Promise.all([
         fetch(`${apiBase}/client-files/${client.client_code}/clientService`, {
@@ -217,8 +218,8 @@ useEffect(() => {
     setIsLoading(true); // Set loading to true when starting fetch
     
     const apiBase = process.env.NODE_ENV === 'development' 
-      ? 'http://192.168.150.1:82/api' 
-      : 'http://192.168.1.201:82/api';
+      ? 'http://192.168.56.1:82/api' 
+      : 'http://192.168.56.1:82/api';
 
     try {
       const token = localStorage.getItem('token');
@@ -355,8 +356,8 @@ useEffect(() => {
   const handleFileSelect = async (files, uploadDate, signedDate) => {
   const getApiBase = () => {
     return process.env.NODE_ENV === 'development' 
-      ? 'http://192.168.150.1:82/api' 
-      : 'http://192.168.1.201:82/api';
+      ? 'http://192.168.56.1:82/api' 
+      : 'http://192.168.56.1:82/api';
   };
 
   if (files.length === 0) return { success: false, message: 'No files selected' };
@@ -509,7 +510,7 @@ const handleDeleteFile = async (file) => {
 
     const apiBase = process.env.NODE_ENV === 'development' 
       ? 'http://192.168.150.1:82/api' 
-      : 'http://192.168.1.201:82/api';
+      : 'http://192.168.56.1:82/api';
 
     const response = await axios.delete(`${apiBase}/file/${file.file_id}`, {
       headers: {
@@ -696,7 +697,7 @@ const handleDeleteFile = async (file) => {
 
     const apiBase = process.env.NODE_ENV === 'development' 
       ? 'http://192.168.150.1:82/api' 
-      : 'http://192.168.1.201:82/api';
+      : 'http://192.168.56.1:82/api';
 
     const response = await axios.post(`${apiBase}/client/save`, payload, {
       headers: {
@@ -734,13 +735,13 @@ const handleDeleteFile = async (file) => {
 };
 
   return (
-    <div className="p-6 bg-[#f8f8f8] min-h-screen ml-64">
+    <div className="p-4 bg-white min-h-screen">
 
       {/* Loading Overlay */}
       {isLoading && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg flex flex-col items-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500 mb-4"></div>
+          <div className="bg-white p-4 rounded-lg shadow-lg flex flex-col items-center">
+            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-purple-500 mb-4"></div>
             <p className="text-gray-700">Loading client data...</p>
           </div>
         </div>
@@ -811,36 +812,36 @@ const handleDeleteFile = async (file) => {
         {isViewMode ? "Client Information" : "Add New Client Information"}
       </h1>
 
-      <div className="bg-[#f8f8f8] p-6">
+      <div className="bg-blue-100 shadow-xl p-6 rounded-lg">
         {/* Basic Client Info */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 text-sm">
           <div>
-            <label className="block font-medium text-gray-700 mb-2">Client Code</label>
+            <label className="block font-bold text-gray-800 mb-2">Client Code</label>
             <input
               type="text"
               name="client_code"
               value={client.client_code || ""}
               onChange={handleChange}
-              className="mt-1 p-2 border border-gray-300 rounded w-full"
+              className="mt-1 p-2 border border-gray-300 rounded-lg w-full"
             />
           </div>
           <div>
-            <label className="block font-medium text-gray-700 mb-2">Client Name</label>
+            <label className="block font-bold text-gray-800 mb-2 text-sm">Client Name</label>
             <input
               type="text"
               name="client_name"
               value={client.client_name || ""}
               onChange={handleChange}
-              className="mt-1 p-2 border border-gray-300 rounded w-full"
+              className="mt-1 p-2 border border-gray-300 rounded-lg w-full"
             />
           </div>
           <div>
-            <label className="block font-medium text-gray-700 mb-2">Industry</label>
+            <label className="block font-bold text-gray-800 mb-2 text-sm">Industry</label>
             <select
               name="industry"
               value={client.industry || ""}
               onChange={handleChange}
-              className="mt-1 p-2 border border-gray-300 rounded w-full"
+              className="mt-1 p-2 border border-gray-300 rounded-lg w-full"
             >
               <option value="">Select an industry</option>
               <option value="Manufacturing">Automotive</option>
@@ -857,21 +858,21 @@ const handleDeleteFile = async (file) => {
         </div>
 
         {/* Address */}
-        <div className="mb-4">
-          <label className="block font-medium text-gray-700 mb-2">Address</label>
+        <div className="mb-4 text-sm">
+          <label className="block font-bold text-gray-800 mb-2text-sm">Address</label>
           <textarea
             type="text"
             name="main_address"
             value={client.main_address || ""}
             onChange={handleChange}
-            className="mt-1 p-2 border border-gray-300 rounded w-full h-[127px]"
+            className="mt-1 p-2 border border-gray-300 rounded-lg w-full h-[127px] text-sm"
           />
         </div>
 
         {/* Number of Users */}
-        <div className="grid grid-cols-6 items-center gap-4 mb-4">
+        <div className="grid grid-cols-6 items-center gap-4 mb-4 text-sm">
           <div className="col-span-2">
-            <label htmlFor="cal" className="block text-gray-700 mb-2">
+            <label htmlFor="cal" className="block font-bold text-gray-800 mb-2 text-sm">
               Number of Users
             </label>
             <input
@@ -880,14 +881,14 @@ const handleDeleteFile = async (file) => {
               name="cal"
               value={client.cal || ""}
               onChange={handleChange}
-              className="mt-1 p-2 border border-gray-300 rounded w-full"
+              className="mt-1 p-2 border border-gray-300 rounded-lg w-full"
             />
           </div>
         </div>
 
         {/* Financials Tab */}
 <div className="mt-6">
-  <div className="flex space-x-4 bg-gradient-to-r from-blue-400 to-purple-300 gap-[285px] text-white rounded-t-md p-4">
+  <div className="flex space-x-10 bg-blue-500 gap-[200px] text-white rounded-t-md p-4">
     <button 
       className={`pb-2 font-semibold ${activeTopTab === "FINANCIALS" ? "border-b-2 border-white" : "opacity-70 hover:opacity-100"}`}
       onClick={() => setActiveTopTab("FINANCIALS")}
@@ -916,7 +917,7 @@ const handleDeleteFile = async (file) => {
 
           {/* Financials Content */}
           {activeTopTab === "FINANCIALS" && (
-  <div className="grid grid-cols-5 p-6 bg-[#f8f8f8]">
+  <div className="grid grid-cols-5 p-6 text-sm">
     {/* Existing Financials content */}
     <div>
       <label className="block font-semibold text-gray-800 mb-2">
@@ -930,7 +931,7 @@ const handleDeleteFile = async (file) => {
             name="training_days"
             value={client.training_days || 0}
             onChange={handleChange}
-            className="p-2 border border-gray-300 rounded text-center h-[55px] w-[65px]"
+            className="p-2 border border-gray-300 rounded text-right h-[40px] w-[60px]"
           />
           <p className="text-sm text-gray-500 mt-1 text-center">Contract</p>
         </div>
@@ -940,7 +941,7 @@ const handleDeleteFile = async (file) => {
             name="training_days_consumed"
             value={client.training_days_consumed || 0}
             onChange={handleChange}
-            className="p-2 border border-gray-300 rounded text-center h-[55px] w-[65px]"
+            className="p-2 border border-gray-300 rounded text-right h-[40px] w-[60px]"
           />
           <p className="text-sm text-gray-500 mt-1 text-center">Consumed</p>
         </div>
@@ -960,7 +961,7 @@ const handleDeleteFile = async (file) => {
                     name="post_training_days"
                     value={client.post_training_days || 0}
                     onChange={handleChange}
-                    className="p-2 border border-gray-300 rounded text-center h-[55px] w-[65px]"
+                    className="p-2 border border-gray-300 rounded text-right h-[40px] w-[60px]"
                   />
                   <p className="text-sm text-gray-500 mt-1 text-center">Contract</p>
                 </div>
@@ -971,7 +972,7 @@ const handleDeleteFile = async (file) => {
                     name="post_training_days_consumed"
                     value={client.post_training_days_consumed || 0}
                     onChange={handleChange}
-                    className="p-2 border border-gray-300 rounded text-center h-[55px] w-[65px]"
+                    className="p-2 border border-gray-300 rounded text-right h-[40px] w-[60px]"
                   />
                   <p className="text-sm text-gray-500 mt-1 text-center">Consumed</p>
                 </div>
@@ -992,7 +993,7 @@ const handleDeleteFile = async (file) => {
                       name="fs_generation_contract"
                       value={client.fs_generation_contract || 0}
                       onChange={handleChange}
-                      className="p-2 border border-gray-300 rounded text-center h-[55px] w-[65px]"
+                      className="p-2 border border-gray-300 rounded text-right h-[40px] w-[60px]"
                     />
                     <p className="text-sm text-gray-500 mt-1 text-center">Contract</p>
                   </div>
@@ -1003,7 +1004,7 @@ const handleDeleteFile = async (file) => {
                       name="fs_generation_consumed"
                       value={client.fs_generation_consumed || 0}
                       onChange={handleChange}
-                      className="p-2 border border-gray-300 rounded text-center h-[55px] w-[65px]"
+                      className="p-2 border border-gray-300 rounded text-right h-[40px] w-[60px]"
                     />
                     <p className="text-sm text-gray-500 mt-1 text-center">Consumed</p>
                   </div>
@@ -1042,8 +1043,8 @@ const handleDeleteFile = async (file) => {
 
 
         {/* Modules Section */}
-        <div className="mb-6">
-          <div className="grid grid-cols-3 gap-4 items-start">
+        <div className="mb-6 ml-5">
+          <div className="grid grid-cols-3 gap-4 items-start text-sm">
             {/* Main Modules */}
             <div>
               <h3 className="text-gray-800 font-semibold mb-2">Modules / Services</h3>
@@ -1151,7 +1152,7 @@ const handleDeleteFile = async (file) => {
         </div>
 
         {/* Bottom Tabs */}
-        <div className="flex space-x-4 bg-gradient-to-r from-blue-400 to-purple-300 gap-[250px] text-white rounded-t-md p-4">
+        <div className="flex space-x-4 bg-blue-500 gap-[200px] text-white rounded-t-md p-4">
           {["Contact Information", "Server Information", "Attachment", "SMA Information"].map((tab) => (
             <button
               key={tab}
@@ -1180,7 +1181,7 @@ const handleDeleteFile = async (file) => {
     </label>
     <input
       type="text"
-      placeholder="Sample Name"
+      placeholder="Sample"
       value={person}
       onChange={(e) => {
         const updatedContacts = [...(client.contact_persons || ["", ""])];
@@ -1260,7 +1261,7 @@ const handleDeleteFile = async (file) => {
         {/* Attachment Tab */}
         {activeTab === "Attachment" && (
           <div>
-            <div className="flex space-x-4 bg-gradient-to-r from-purple-300 to-blue-400 text-white rounded-t-md p-4 mt-10">
+            <div className="flex space-x-4 bg-blue-500 gap-[200px] text-white rounded-t-md p-4 mt-10">
               {["Client Service Form", "Turn-Over Documents"].map((tab) => (
                 <button
                   key={tab}
@@ -1281,7 +1282,7 @@ const handleDeleteFile = async (file) => {
                 {selectedAttachmentType === "Client Service Form" && (
                   <div>
                     <div 
-                      className="flex items-center space-x-2 mb-8 mt-4" 
+                      className="flex items-center space-x-2 mb-4 mt-2" 
                       onClick={() => handleAddFileClick('clientService')}
                     >
                       <FaPlus className="text-blue-500 cursor-pointer" />
@@ -1290,7 +1291,7 @@ const handleDeleteFile = async (file) => {
 
                     <table className="min-w-full bg-white border border-gray-300">
                     <thead>
-  <tr className="border-b bg-gray-200">
+  <tr className="border-b bg-blue-300">
     <th className="p-2 text-left">File Name</th>
     <th className="p-2 text-left">Upload Date</th>
     <th className="p-2 text-left">Signed Date</th>
@@ -1349,7 +1350,7 @@ const handleDeleteFile = async (file) => {
 
                     <table className="min-w-full bg-white border border-gray-300">
                       <thead>
-                        <tr className="border-b bg-gray-200">
+                        <tr className="border-b bg-blue-300">
                           <th className="p-2 text-left">File Name</th>
                           <th className="p-2 text-left">Upload Date</th>
                           <th className="p-2 text-left">Signed Date</th>
@@ -1413,7 +1414,7 @@ const handleDeleteFile = async (file) => {
 
             <table className="min-w-full bg-white border border-gray-300">
               <thead>
-                <tr className="border-b bg-gray-200">
+                <tr className="border-b bg-blue-300">
                  <th className="p-2 text-left">File Name</th>
                   <th className="p-2 text-left">Date Uploaded</th>
                   <th className="p-2 text-left">Date Signed</th>
@@ -1473,7 +1474,7 @@ const handleDeleteFile = async (file) => {
         {/* Save Button */}
         <div className="flex justify-center mt-6">
         <button
-  className="bg-purple-500 text-white font-semibold px-8 py-3 rounded-lg shadow-md hover:bg-purple-400 transition duration-300"
+  className="bg-blue-600 text-white font-semibold px-8 py-3 rounded-lg shadow-md hover:bg-blue-800 transition duration-300"
   onClick={handleSave}
   disabled={isSaving}
 >
@@ -1486,7 +1487,7 @@ const handleDeleteFile = async (file) => {
       {isViewMode ? "UPDATING..." : "SAVING..."}
     </>
   ) : (
-    isViewMode ? "UPDATE" : "SAVE"
+    isViewMode ? "Update" : "Save"
   )}
 </button>
         </div>

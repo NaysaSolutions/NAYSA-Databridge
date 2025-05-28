@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React from "react";
+import { useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -8,76 +9,113 @@ import {
   faCog,
   faQuestionCircle,
   faBars,
+  faAdd,
 } from "@fortawesome/free-solid-svg-icons";
 
-const Sidebar = () => {
+const Sidebar = ({ isOpen, setIsOpen, onAddClient, closeAddClientForm, showAddClientForm, currentSection }) => {
   const location = useLocation();
-  const [isOpen, setIsOpen] = useState(false);
+
+  // Close the form when the location changes
+  useEffect(() => {
+    if (showAddClientForm) {
+      closeAddClientForm();
+    }
+  }, [location.pathname]);
+
 
   return (
     <>
-      {/* Toggle Button for Mobile */}
+      {/* Toggle Button */}
       <button
-        className="md:hidden p-4 fixed top-4 left-4 bg-blue-500 text-white rounded-lg z-50"
+        className="p-2 fixed top-4 left-4 bg-blue-700 text-white rounded-lg z-50 ml-2"
         onClick={() => setIsOpen(!isOpen)}
       >
-        <FontAwesomeIcon icon={faBars} className="w-6 h-6" />
+        <FontAwesomeIcon icon={faBars} className="w-5 h-5" />
       </button>
 
       {/* Sidebar */}
       <aside
-        className={`fixed left-0 top-0 bg-white p-5 flex flex-col justify-between font-poppins shadow-lg transition-all duration-300 z-40 ${
-          isOpen ? "w-64" : "w-0 md:w-64"
-        } h-screen overflow-hidden md:flex md:w-64`}
+        className={`fixed top-0 left-0 h-screen bg-white shadow-lg font-poppins z-40 transition-all duration-300 flex flex-col justify-between overflow-hidden ${
+          isOpen ? "w-64" : "w-20"
+        }`}
       >
         <div>
-          <div className="mb-8">
+          {/* Logo */}
+          <div className={`transition-all duration-300 ${isOpen ? "px-5 ml-12 mt-3 mb-6" : "ml-0 mb-6 mt-20"}`}>
             <img
-              src="/NSI_LOGO_2.avif"
+              src={isOpen ? "/NSI_LOGO_2.avif" : "/naysa_logo.png"}
               alt="Logo"
-              className="w-[200px] h-auto mx-auto mb-16"
+              className={`mx-auto ${isOpen ? "w-[180px]" : "w-10"}`}
             />
           </div>
+
+          {/* Navigation */}
           <nav>
-            <ul className="space-y-6">
-              <li
-                className={`flex items-center space-x-4 p-2 rounded-lg transition ${
-                  location.pathname === "/dashboard"
-                    ? "text-blue-500 font-semibold bg-blue-100"
-                    : "text-gray-700 hover:bg-gray-100"
-                }`}
-              >
-                <FontAwesomeIcon icon={faTh} className="w-6 h-6" />
-                <Link to="/dashboard">Dashboard</Link>
-              </li>
-              <li
-                className={`flex items-center space-x-4 p-2 rounded-lg transition ${
-                  location.pathname === "/clients"
-                    ? "text-blue-500 font-semibold bg-blue-100"
-                    : "text-gray-700 hover:bg-gray-100"
-                }`}
-              >
-                <FontAwesomeIcon icon={faUsers} className="w-6 h-6" />
-                <Link to="/clients">Clients</Link>
-              </li>
-              <li className="flex items-center space-x-4 text-gray-700 p-2 hover:bg-gray-100 rounded-lg">
-                <FontAwesomeIcon icon={faClipboardList} className="w-6 h-6" />
-                <span>Prospect Clients</span>
-              </li>
-              <li className="flex items-center space-x-4 text-gray-700 p-2 hover:bg-gray-100 rounded-lg">
-                <FontAwesomeIcon icon={faCog} className="w-6 h-6" />
-                <span>Settings</span>
-              </li>
+            <ul className="space-y-6 ml-5 mr-4">
+              <SidebarLink
+                to="/dashboard"
+                icon={faTh}
+                label="Dashboard"
+                isActive={location.pathname === "/dashboard" && currentSection !== 'add-client'}
+                isOpen={isOpen}
+                onClick={() => {
+                  closeAddClientForm();
+                  handleNavigationClick('dashboard');
+                }}
+              />
+              <SidebarLink
+                to="/clients"
+                icon={faUsers}
+                label="Clients"
+                isActive={location.pathname === "/clients" && currentSection !== 'add-client'}
+                isOpen={isOpen}
+                onClick={() => {
+                  closeAddClientForm();
+                  handleNavigationClick('clients');
+                }}
+              />
+
+              {/* "Add New Client" triggers prop function */}
+              <SidebarLink
+                icon={faAdd}
+                label="Add New Client"
+                isActive={currentSection === 'add-client'}
+                isOpen={isOpen}
+                onClick={onAddClient}
+            />
             </ul>
           </nav>
         </div>
-        <div className="flex items-center space-x-4 text-gray-500 p-2 hover:bg-gray-100 rounded-lg">
-          <FontAwesomeIcon icon={faQuestionCircle} className="w-6 h-6" />
-          <span>Help</span>
+
+        {/* Help Link */}
+        <div className="p-4 text-gray-500 hover:bg-gray-100 rounded-lg flex items-center space-x-3">
+          <FontAwesomeIcon icon={faQuestionCircle} className="w-5 h-5" />
+          {isOpen && <span>Help</span>}
         </div>
       </aside>
     </>
   );
 };
+
+const SidebarLink = ({ to, icon, label, isActive, isOpen, onClick }) => {
+  const content = (
+    <div
+      className={`flex items-center space-x-4 p-2 rounded-lg transition cursor-pointer ${
+        isActive ? "text-blue-700 font-semibold bg-blue-100" : "text-gray-700 hover:bg-gray-100"
+      }`}
+    >
+      <FontAwesomeIcon icon={icon} className="w-5 h-5" />
+      {isOpen && <span>{label}</span>}
+    </div>
+  );
+
+  // If `to` is defined, wrap with <Link>, otherwise use a <div> with onClick
+  return (
+    <li onClick={onClick}>
+      {to ? <Link to={to}>{content}</Link> : content}
+    </li>
+  );
+};
+
 
 export default Sidebar;
