@@ -15,47 +15,51 @@ function Login() {
         setFormData({ ...formData, [name]: value });
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-
-        try {
-            const response = await axios.post("https://api.nemarph.com:81/api/loginDB", formData);
-
-            if (response.data.status === "success") {
-                const userData = response.data.user; // Assume API returns { id, username, email }
-
-                setUser(userData); // Set user in AuthContext
-
-                await Swal.fire({
-                    title: `Welcome, ${userData.username}!`,
-                    icon: "success",
-                    timer: 2000,
-                    confirmButtonText: "OK",
-                });
-
-                navigate("/dashboard");
-            } else {
-                await Swal.fire({
-                    title: "Login failed!",
-                    text: response.data.message || "Invalid credentials. Please try again.",
-                    icon: "error",
-                    confirmButtonText: "OK",
-                });
-            }
-        } catch (error) {
-            console.error("Login failed:", error);
-            await Swal.fire({
-                title: "Error!",
-                text: "An error occurred while trying to log in. Please try again later.",
-                icon: "error",
-                confirmButtonText: "OK",
-            });
-        } finally {
-            setLoading(false);
-        }
-    };
-
+    // In your Login component
+const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+  
+    try {
+      const response = await axios.post("http://192.168.1.201:82/api/loginDB", formData);
+  
+      if (response.data.status === "success") {
+        const userData = response.data.user;
+        const token = response.data.token; // Assuming your API returns a token
+  
+        // Store token and user data
+        localStorage.setItem('token', token);
+        setUser(userData);
+  
+        await Swal.fire({
+          title: `Welcome, ${userData.username}!`,
+          icon: "success",
+          timer: 2000,
+          confirmButtonText: "OK",
+        });
+  
+        navigate("/dashboard");
+      } else {
+        await Swal.fire({
+          title: "Login failed!",
+          text: response.data.message || "Invalid credentials. Please try again.",
+          icon: "error",
+          confirmButtonText: "OK",
+        });
+      }
+    } catch (error) {
+      console.error("Login failed:", error);
+      await Swal.fire({
+        title: "Error!",
+        text: "An error occurred while trying to log in. Please try again later.",
+        icon: "error",
+        confirmButtonText: "OK",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  
     return (
         <div className="bg-[linear-gradient(to_bottom,#7392b7,#d8e1e9)] flex items-center justify-center min-h-screen px-4">
             <div className="relative px-20 py-10 rounded-3xl shadow-md" style={{ width: '530px', height: '565px' }}>

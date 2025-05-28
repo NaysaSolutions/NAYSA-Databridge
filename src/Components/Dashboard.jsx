@@ -21,7 +21,7 @@ const Dashboard = () => {
 
   const fetchClients = async () => {
     try {
-      const response = await fetch("https://api.nemarph.com:81/api/getClients", {
+      const response = await fetch("http://192.168.1.201:82/api/getClients", {
         headers: { Accept: "application/json" },
       });
 

@@ -25,7 +25,7 @@ function Register() {
     
         setLoading(true);
         try {
-            const response = await axios.post('http://127.0.0.1:8000/api/register', formData);
+            const response = await axios.post('http://192.168.150.1:82/api/register', formData);
             
             // Ensure API returns userId correctly
             const { userId } = response.data.user;  

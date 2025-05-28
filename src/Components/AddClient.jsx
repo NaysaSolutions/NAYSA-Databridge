@@ -3,6 +3,12 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBell, faUser, faSignOutAlt, faArrowLeft, faArrowUp } from "@fortawesome/free-solid-svg-icons";
 import { useNavigate, useLocation } from "react-router-dom";
 import { FaPlus } from "react-icons/fa";
+import axios from 'axios';
+import Swal from 'sweetalert2';
+import bcrypt from 'bcryptjs';
+import { Eye, EyeOff } from 'lucide-react'
+import { FaTrash, FaDownload, FaEye } from 'react-icons/fa';
+
 import FileUpload from "./FileUpload";
 
 const AddClientForm = () => {
@@ -15,15 +21,20 @@ const AddClientForm = () => {
   const [fileSignedDate, setFileSignedDate] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [selectedAttachmentType, setSelectedAttachmentType] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showRemotePw, setShowRemotePw] = useState(false);
+  const [showServerPw, setShowServerPw] = useState(false);
+  const [activeTopTab, setActiveTopTab] = useState("FINANCIALS");
 
   // Initialize all state at the top
   const [technicianInputs, setTechnicianInputs] = useState([""]);
   const [selectedTechnicians, setSelectedTechnicians] = useState([]);
   const [clientTechnicians, setClientTechnicians] = useState([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [customerServiceFiles, setCustomerServiceFiles] = useState([]);
-  const [turnOverFiles, setTurnOverFiles] = useState([]);
-  const [smaInformationFiles, setSmaInformationFiles] = useState([]);
+ // Initialize file states properly
+const [clientServiceFiles, setclientServiceFiles] = useState([]);
+const [turnOverFiles, setTurnOverFiles] = useState([]);
+const [smaInformationFiles, setSmaInformationFiles] = useState([]);
   const [pendingChanges, setPendingChanges] = useState({});
   const [applications, setApplications] = useState([]);
   const [editedFiles, setEditedFiles] = useState({});
@@ -37,27 +48,30 @@ const AddClientForm = () => {
   const [activeTab2, setActiveTab2] = useState("Client Service Form");
 
   const [client, setClient] = useState({
-    client_code: "",
-    client_name: "",
-    main_address: "",
-    contract_date: "",
-    cas: "",
-    live: "",
-    sma_days: "",
-    fs_live: "",
-    cal: "",
-    industry: "",
-    training_days: 0,
-    training_days_consumed: 0,
-    post_training_days: 0,
-    post_training_days_consumed: 0,
-    fs_generation_contract: 0,
-    fs_generation_consumed: 0,
-    remote_id: "",
-    remote_pw: "",
-    server_pw: "",
-    with_sma: "",
-  });
+  client_code: "",
+  client_name: "",
+  main_address: "",
+  contract_date: "",
+  cas: "N",
+  live: "N",
+  sma_days: "",
+  fs_live: "N",
+  cal: "",
+  industry: "",
+  training_days: 0,
+  training_days_consumed: 0,
+  post_training_days: 0,
+  post_training_days_consumed: 0,
+  fs_generation_contract: 0,
+  fs_generation_consumed: 0,
+  remote_id: "",
+  remote_pw: "",
+  server_pw: "",
+  with_sma: "N",
+  active: "N",
+  contact_persons: ["", ""]
+});
+
 
   const [toggles, setToggles] = useState({
     cas: false,
@@ -67,21 +81,18 @@ const AddClientForm = () => {
     active: false
   });
 
-  const getApiBase = () => {
-    return process.env.NODE_ENV === 'development' 
-      ? 'http://localhost:8000/api' 
-      : 'https://api.nemarph.com:81/api';
-  };
+
 
   const modules = [
     "General Ledger",
-    "Account Payable",
+    "Accounts Payable",
     "Sales",
-    "Account Receivable",
+    "Accounts Receivable",
     "Purchasing",
     "FG Inventory",
     "MS Inventory",
     "RM Inventory",
+    "VE Inventory",
   ];
 
   const otherModules = [
@@ -101,7 +112,7 @@ const AddClientForm = () => {
     "Jomel Mendoza",
     "Gerard Mendoza"
   ];
-
+  
   const technicianCodeMap = {
     "Danica Castillo": "DGC",
     "France Rosimo": "FLR",
@@ -110,6 +121,16 @@ const AddClientForm = () => {
     "Jomel Mendoza": "JBM",
     "Gerard Mendoza": "GSM",
   };
+
+  const codeToTechnicianMap = {
+    "DGC": "Danica Castillo",
+    "FLR": "France Rosimo",
+    "MAA": "Anjeaneth Alarcon",
+    "AGA": "Arvee Aurelio",
+    "JBM": "Jomel Mendoza",
+    "GSM": "Gerard Mendoza"
+  };
+
 
   // Scroll handling
   useEffect(() => {
@@ -120,14 +141,19 @@ const AddClientForm = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Fetch client data when in view mode
-  useEffect(() => {
-    if (location.state) {
-      setClient(location.state);
-      setIsViewMode(true);
-      fetchClientData(location.state.client_code);
-    }
-  }, [location.state]);
+  // When initializing from existing data
+useEffect(() => {
+  if (location.state) {
+    setClient(location.state);
+    setIsViewMode(true);
+    fetchClientData(location.state.client_code)
+      .then(data => {
+        if (data) {
+          setSelectedModules(data.modules?.map(m => m.module_name) || []);
+        }
+      });
+  }
+}, [location.state]);
 
   // Fetch client files when client code changes
   useEffect(() => {
@@ -138,25 +164,25 @@ const AddClientForm = () => {
 
   // Update toggles when client data changes
   useEffect(() => {
-    if (client) {
-      setToggles({
-        cas: client.cas === "Y",
-        live: client.live === "Y",
-        with_sma: client.with_sma === "Y",
-        fs_live: client.fs_live === "Y",
-        active: client.active === "Y"
-      });
-    }
-  }, [client]);
+  if (client) {
+    setToggles({
+      cas: client.cas === "Y",
+      live: client.live === "Y",
+      with_sma: client.with_sma === "Y",
+      fs_live: client.fs_live === "Y",
+      active: client.active === "Y"
+    });
+  }
+}, [client]);
 
   const fetchClientFiles = async () => {
     try {
       const apiBase = process.env.NODE_ENV === 'development' 
-        ? 'http://localhost:8000/api' 
-        : 'https://api.nemarph.com:81/api';
+        ? 'http://192.168.150.1:82/api' 
+        : 'http://192.168.1.201:82/api';
 
       const [csResponse, toResponse, smaResponse] = await Promise.all([
-        fetch(`${apiBase}/client-files/${client.client_code}/customerService`, {
+        fetch(`${apiBase}/client-files/${client.client_code}/clientService`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
@@ -177,7 +203,7 @@ const AddClientForm = () => {
       const toData = await toResponse.json();
       const smaData = await smaResponse.json();
 
-      if (csData.success) setCustomerServiceFiles(csData.files);
+      if (csData.success) setclientServiceFiles(csData.files);
       if (toData.success) setTurnOverFiles(toData.files);
       if (smaData.success) setSmaInformationFiles(smaData.files);
 
@@ -187,28 +213,96 @@ const AddClientForm = () => {
   };
 
   const fetchClientData = async (clientCode) => {
+    console.log('[fetchClientData] Fetching data for client:', clientCode);
+    setIsLoading(true); // Set loading to true when starting fetch
+    
+    const apiBase = process.env.NODE_ENV === 'development' 
+      ? 'http://192.168.150.1:82/api' 
+      : 'http://192.168.1.201:82/api';
+
     try {
-      const [modulesResponse, applicationsResponse, techniciansResponse] = await Promise.all([
-        fetch(`https://api.nemarph.com:81/api/getClientsModule?client_code=${clientCode}`),
-        fetch(`https://api.nemarph.com:81/api/getClientApplications?client_code=${clientCode}`),
-        fetch(`https://api.nemarph.com:81/api/getClientTechnicians?client_code=${clientCode}`)
-      ]);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        navigate('/login');
+        return;
+      }
 
-      const modulesData = await modulesResponse.json();
-      const applicationsData = await applicationsResponse.json();
-      const techniciansData = await techniciansResponse.json();
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json'
+      };
 
-      const techNames = techniciansData.map(tech => tech.technician_name);
-      setTechnicianInputs([...techNames, ""]);
-      setSelectedTechnicians(techNames);
-      setClientTechnicians(techniciansData);
-      setApplications(applicationsData.applications);
-      setSelectedModules(modulesData.modules.map(m => m.module_name));
+      const response = await fetch(`${apiBase}/load-client-data?client_code=${clientCode}`, { headers });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Request failed:', errorText);
+        if (response.status === 401) navigate('/login');
+        throw new Error(errorText || 'Request failed');
+      }
+
+      const data = await response.json();
+      console.log('Raw API response:', data);
+
+      if (!data.success) {
+        throw new Error(data.error || 'API request failed');
+      }
+
+      // Process technicians data
+      const receivedTechnicians = data.technicians || [];
+      const technicianDisplayNames = receivedTechnicians.map(tech => {
+        const name = Object.entries(technicianCodeMap).find(([_, c]) => c === tech.tech_code)?.[0] || tech.tech_code;
+        return `${name} (${tech.tech_code})`;
+      });
+
+      // Transform and normalize client data
+      const clientData = data.clients || {};
+      const transformedClient = {
+        client_code: clientData.client_code || '',
+        client_name: clientData.client_name || '',
+        main_address: clientData.main_address || '',
+        contract_date: clientData.contract_date || '',
+        cas: clientData.cas || 'N',
+        live: clientData.live || 'N',
+        sma_days: clientData.sma_days || '',
+        fs_live: clientData.fs_live || 'N',
+        cal: clientData.cal || clientData.numberOfUsers || '', // Map numberOfUsers to cal
+        industry: clientData.industry || '',
+        training_days: Number(clientData.training_days) || 0,
+        training_days_consumed: Number(clientData.training_days_consumed) || 0,
+        post_training_days: Number(clientData.post_training_days) || 0,
+        post_training_days_consumed: Number(clientData.post_training_days_consumed) || 0,
+        fs_generation_contract: Number(clientData.fs_generation_contract) || 0,
+        fs_generation_consumed: Number(clientData.fs_generation_consumed) || 0,
+        remote_id: clientData.remote_id || '',
+        remote_pw: clientData.remote_pw || '',
+        server_pw: clientData.server_pw || '',
+        with_sma: clientData.with_sma || 'N',
+        active: clientData.active || 'N'
+      };
+
+      console.log('Transformed client data:', transformedClient);
+
+      // Update state
+      setClient(transformedClient);
+      setTechnicianInputs([...technicianDisplayNames, ""]);
+      setSelectedTechnicians(technicianDisplayNames);
+      setClientTechnicians(receivedTechnicians.map(t => t.tech_code));
+      setApplications(data.applications || []);
+      setSelectedModules(data.modules?.map(m => m.module_name) || []);
+
+      return data;
 
     } catch (error) {
       console.error('Error fetching client data:', error);
+      alert(`Error loading client data: ${error.message}`);
+      throw error;
+    } finally {
+      setIsLoading(false); // Set loading to false when done
     }
   };
+
+  
 
   const handleLogout = () => {
     navigate("/");
@@ -241,10 +335,10 @@ const AddClientForm = () => {
   };
 
   const handleToggle = (key) => {
-    const newValue = !toggles[key];
-    setToggles(prev => ({ ...prev, [key]: newValue }));
-    setClient(prev => ({ ...prev, [key]: newValue ? "Y" : "N" }));
-  };
+  const newValue = !toggles[key];
+  setToggles(prev => ({ ...prev, [key]: newValue }));
+  setClient(prev => ({ ...prev, [key]: newValue ? "Y" : "N" }));
+};
 
   const toggleSelection = (item, list, setList) => {
     setList(prev => prev.includes(item) 
@@ -259,88 +353,198 @@ const AddClientForm = () => {
   };
 
   const handleFileSelect = async (files, uploadDate, signedDate) => {
-    if (files.length === 0) return { success: false, message: 'No files selected' };
-    
-    setIsUploading(true);
-    try {
-      const results = [];
-      
-      for (const fileObj of files) {
-        const file = fileObj.file;
-        
-        const idResponse = await fetch(`${getApiBase()}/generate-id`, {
-          method: 'GET',
-          headers: { 
-            'Accept': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
-        
-        if (!idResponse.ok) {
-          const errorData = await idResponse.json().catch(() => ({}));
-          throw new Error(errorData.message || `Server returned ${idResponse.status}`);
-        }
-        
-        const idData = await idResponse.json();
-        if (!idData.success || !idData.file_id) {
-          throw new Error(idData.message || 'Invalid ID received');
-        }
-        
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('file_id', idData.file_id);
-        formData.append('client_code', client.client_code);
-        formData.append('file_name', file.name);
-        formData.append('file_type', currentFileType);
-        formData.append('upload_date', uploadDate);
-        formData.append('signed_date', signedDate);
-  
-        const uploadResponse = await fetch(`${getApiBase()}/upload`, {
-          method: 'POST',
-          body: formData,
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
-  
-        if (!uploadResponse.ok) {
-          const errorData = await uploadResponse.json();
-          throw new Error(errorData.message || 'Upload failed');
-        }
-  
-        const result = await uploadResponse.json();
-        results.push({
-          id: idData.file_id,
-          fileName: file.name,
-          uploadDate,
-          signedDate,
-          fileType: currentFileType,
-          path: result.path
-        });
-      }
-  
-      const fileSetter = {
-        'customerService': setCustomerServiceFiles,
-        'turnOver': setTurnOverFiles,
-        'smaInformation': setSmaInformationFiles
-      }[currentFileType];
-      
-      if (fileSetter) {
-        fileSetter(prev => [...prev, ...results]);
-      }
-  
-      await fetchClientFiles();
-      return { success: true, message: `${files.length} files uploaded successfully` };
-      
-    } catch (error) {
-      console.error('Upload failed:', error);
-      return { success: false, message: error.message || 'Upload failed' };
-    } finally {
-      setIsUploading(false);
-    }
+  const getApiBase = () => {
+    return process.env.NODE_ENV === 'development' 
+      ? 'http://192.168.150.1:82/api' 
+      : 'http://192.168.1.201:82/api';
   };
 
+  if (files.length === 0) return { success: false, message: 'No files selected' };
+  
+  setIsUploading(true);
+  try {
+    // Optimistically update UI with the new files
+    const tempFiles = files.map(fileObj => ({
+      id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      fileName: fileObj.file.name,
+      uploadDate,
+      signedDate,
+      fileType: currentFileType,
+      original_name: fileObj.file.name,
+      status: 'uploading'
+    }));
+
+    // Update the appropriate file list immediately using functional update
+    const updateFileState = (prevFiles) => [...prevFiles, ...tempFiles];
+    
+    switch(currentFileType) {
+      case 'clientServiceForm':
+        setclientServiceFiles(updateFileState);
+        break;
+      case 'turnOver':
+        setTurnOverFiles(updateFileState);
+        break;
+      case 'smaInformation':
+        setSmaInformationFiles(updateFileState);
+        break;
+      default:
+        break;
+    }
+
+    // Proceed with actual upload
+    const results = [];
+    
+    for (const fileObj of files) {
+      const file = fileObj.file;
+      
+      const idResponse = await fetch(`${getApiBase()}/generate-id`, {
+        method: 'GET',
+        headers: { 
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (!idResponse.ok) {
+        throw new Error(`Server returned ${idResponse.status}`);
+      }
+      
+      const idData = await idResponse.json();
+      if (!idData.success || !idData.file_id) {
+        throw new Error(idData.message || 'Invalid ID received');
+      }
+      
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('file_id', idData.file_id);
+      formData.append('client_code', client.client_code);
+      formData.append('file_name', file.name);
+      formData.append('file_type', currentFileType);
+      formData.append('upload_date', uploadDate);
+      formData.append('signed_date', signedDate || null);
+
+      const uploadResponse = await fetch(`${getApiBase()}/upload`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error('Upload failed');
+      }
+
+      const result = await uploadResponse.json();
+      results.push({
+        file_id: idData.file_id,
+        original_name: file.name,
+        upload_date: uploadDate,
+        signed_date: signedDate,
+        file_type: currentFileType,
+        path: result.path
+      });
+    }
+
+    // Update state with final uploaded files (replacing temp files)
+    const updateFinalState = (prevFiles) => [
+      ...prevFiles.filter(f => !f.id?.includes('temp-')), // Remove temp files
+      ...results
+    ];
+
+    switch(currentFileType) {
+      case 'clientServiceForm':
+        setclientServiceFiles(updateFinalState);
+        break;
+      case 'turnOver':
+        setTurnOverFiles(updateFinalState);
+        break;
+      case 'smaInformation':
+        setSmaInformationFiles(updateFinalState);
+        break;
+      default:
+        break;
+    }
+
+    return { success: true, message: `${files.length} files uploaded successfully` };
+    
+  } catch (error) {
+    console.error('Upload failed:', error);
+    // Remove failed uploads from state
+    const removeTempFiles = (prevFiles) => prevFiles.filter(f => !f.id?.includes('temp-'));
+    
+    switch(currentFileType) {
+      case 'clientServiceForm':
+        setclientServiceFiles(removeTempFiles);
+        break;
+      case 'turnOver':
+        setTurnOverFiles(removeTempFiles);
+        break;
+      case 'smaInformation':
+        setSmaInformationFiles(removeTempFiles);
+        break;
+      default:
+        break;
+    }
+    
+    return { success: false, message: error.message || 'Upload failed' };
+  } finally {
+    setIsUploading(false);
+  }
+};
+
+const handleDeleteFile = async (file) => {
+  try {
+    const confirm = await Swal.fire({
+      title: 'Are you sure?',
+      text: "You won't be able to revert this!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, delete it!'
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    const apiBase = process.env.NODE_ENV === 'development' 
+      ? 'http://192.168.150.1:82/api' 
+      : 'http://192.168.1.201:82/api';
+
+    const response = await axios.delete(`${apiBase}/file/${file.file_id}`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (response.data.success) {
+      await Swal.fire(
+        'Deleted!',
+        'Your file has been deleted.',
+        'success'
+      );
+      fetchClientFiles(); // Refresh the file list
+    } else {
+      throw new Error(response.data.message || 'Delete failed');
+    }
+  } catch (error) {
+    console.error('Delete error:', error);
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: error.response?.data?.message || `Error deleting file: ${error.message}`
+    });
+  }
+};
+
   const handleViewFile = async (file) => {
+
+    const getApiBase = () => {
+      return 'http://192.168.150.1:82/api';
+    };
+
     try {
       const apiBase = getApiBase();
       
@@ -370,6 +574,10 @@ const AddClientForm = () => {
   };
   
   const handleDownloadFile = async (file) => {
+    const getApiBase = () => {
+      return 'http://192.168.150.1:82/api';
+    };
+    
     try {
       const apiBase = getApiBase();
       
@@ -408,69 +616,136 @@ const AddClientForm = () => {
     setClient(prev => ({ ...prev, [name]: value }));
   };
 
+  const handlePassword = async (e) => {
+  const { name, value } = e.target;
+
+  // Hash only the password fields
+  if (name === "remote_pw" || name === "server_pw") {
+    const hashedValue = await bcrypt.hash(value, 10);
+    setClient(prev => ({
+      ...prev,
+      [name]: hashedValue
+    }));
+  } else {
+    setClient(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  }
+};
+
   const handleSave = async () => {
-    if (!client.client_code || !client.client_name) {
-      alert("Please fill in required fields (Client Code and Client Name)");
-      return;
-    }
+  const moduleCodeMap = {
+    'General Ledger': 'GL',
+    'Accounts Payable': 'AP',
+    'Sales': 'SA',
+    'Accounts Receivable': 'AR',
+    'Purchasing': 'PUR',
+    'FG Inventory': 'FGINV',
+    'MS Inventory': 'MSINV',
+    'RM Inventory': 'RM Inventory',
+    'Fixed Assets': 'FA',
+    'Budget': 'BUD',
+    'Bank Recon': 'BR',
+    'Production': 'PROD',
+    'Importation': 'IMP',
+    'Financing': 'FIN'
+  };
 
-    try {
-      setIsSaving(true);
-      const dataToSend = {
-        client_data: {
-          ...client,
-          cas: toggles.cas ? "Y" : "N",
-          live: toggles.live ? "Y" : "N",
-          with_sma: toggles.with_sma ? "Y" : "N",
-          fs_live: toggles.fs_live ? "Y" : "N",
-          active: toggles.active ? "Y" : "N",
-          contract_date: client.contract_date || new Date().toISOString().split('T')[0],
-          modules: selectedModules,
-          technicians: selectedTechnicians,
-        },
-        technicians: selectedTechnicians.map(name => ({
-          technician_name: name,
-          technician_code: technicianCodeMap[name],
-          client_code: client.client_code
-        })),
-        files: {
-          customer_service: customerServiceFiles,
-          turn_over: turnOverFiles,
-          sma_information: smaInformationFiles
+  try {
+    setIsSaving(true);
+
+    const technicianCodes = selectedTechnicians.map(tech => {
+      const matches = tech.match(/\(([^)]+)\)/);
+      return matches ? matches[1] : tech;
+    });
+
+    const payload = {
+      mode: 'Upsert',
+      params: JSON.stringify({
+        json_data: {
+          client_code: client.client_code,
+          client_name: client.client_name,
+          main_address: client.main_address,
+          contract_date: client.contract_date,
+          industry: client.industry,
+          remote_id: client.remote_id,
+          remote_pw: client.remote_pw,
+          server_pw: client.server_pw,
+          cas: client.cas,
+          live: client.live,
+          with_sma: client.with_sma,
+          fs_live: client.fs_live,
+          active: client.active,
+          cal: client.cal,
+          sma_days: client.sma_days,
+          training_days: client.training_days,
+          training_days_consumed: client.training_days_consumed ?? 0,
+          post_training_days: client.post_training_days,
+          post_training_days_consumed: client.post_training_days_consumed ?? 0,
+          fs_generation_consumed: client.fs_generation_consumed ?? 0,
+          contact_persons: client.contact_persons,
+          client_modules: selectedModules.map(module => ({
+            module_name: module,
+            module_code: moduleCodeMap[module] 
+          })),
+          client_technicals: technicianCodes.map(code => ({ tech_code: code }))
         }
-      };
+      })
+    };
 
-      const endpoint = isViewMode 
-        ? `https://api.nemarph.com:81/api/update-client/${client.client_code}`
-        : 'https://api.nemarph.com:81/api/add-client';
+    const apiBase = process.env.NODE_ENV === 'development' 
+      ? 'http://192.168.150.1:82/api' 
+      : 'http://192.168.1.201:82/api';
 
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dataToSend),
+    const response = await axios.post(`${apiBase}/client/save`, payload, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (response.data.success) {
+      await Swal.fire({
+        icon: 'success',
+        title: 'Success',
+        text: 'Client data saved successfully'
       });
 
-      const responseData = await response.json();
-      if (!response.ok) {
-        throw new Error(responseData.message || "Failed to save client data");
+      if (!isViewMode) {
+        navigate(`/client/${client.client_code}`, { 
+          state: { ...client, client_code: client.client_code } 
+        });
       }
-
-      if (responseData.success) {
-        alert(isViewMode ? "Client updated successfully!" : "Client saved successfully!");
-        navigate("/clients");
-      } else {
-        throw new Error(responseData.message || "Failed to save client data");
-      }
-    } catch (error) {
-      console.error("Save error:", error);
-      alert(`Error saving client: ${error.message}`);
-    } finally {
-      setIsSaving(false);
+    } else {
+      throw new Error(response.data.message || 'Save failed');
     }
-  };
+
+  } catch (error) {
+    console.error('Save error:', error);
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: `Error saving client: ${error.message}`
+    });
+  } finally {
+    setIsSaving(false);
+  }
+};
 
   return (
     <div className="p-6 bg-[#f8f8f8] min-h-screen ml-64">
+
+      {/* Loading Overlay */}
+      {isLoading && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg flex flex-col items-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500 mb-4"></div>
+            <p className="text-gray-700">Loading client data...</p>
+          </div>
+        </div>
+      )}
+
       {/* File Upload Modal */}
       <FileUpload
   isOpen={showFileModal}
@@ -483,6 +758,7 @@ const AddClientForm = () => {
     if (result.success) {
       setShowFileModal(false);
       setFileSignedDate("");
+      fetchClientFiles();
     }
     return result;
   }}
@@ -610,45 +886,66 @@ const AddClientForm = () => {
         </div>
 
         {/* Financials Tab */}
-        <div className="mt-6">
-          <div className="flex space-x-4 bg-gradient-to-r from-blue-400 to-purple-300 gap-[285px] text-white rounded-t-md p-4">
-            <button className="pb-2 font-semibold border-b-2 border-white">FINANCIALS</button>
-            <button className="pb-2 font-semibold opacity-70 hover:opacity-100">HR-PAY</button>
-            <button className="pb-2 font-semibold opacity-70 hover:opacity-100">Realty</button>
-            <button className="pb-2 font-semibold opacity-70 hover:opacity-100">WMS</button>
-          </div>
+<div className="mt-6">
+  <div className="flex space-x-4 bg-gradient-to-r from-blue-400 to-purple-300 gap-[285px] text-white rounded-t-md p-4">
+    <button 
+      className={`pb-2 font-semibold ${activeTopTab === "FINANCIALS" ? "border-b-2 border-white" : "opacity-70 hover:opacity-100"}`}
+      onClick={() => setActiveTopTab("FINANCIALS")}
+    >
+      FINANCIALS
+    </button>
+    <button 
+      className={`pb-2 font-semibold ${activeTopTab === "HR-PAY" ? "border-b-2 border-white" : "opacity-70 hover:opacity-100"}`}
+      onClick={() => setActiveTopTab("HR-PAY")}
+    >
+      HR-PAY
+    </button>
+    <button 
+      className={`pb-2 font-semibold ${activeTopTab === "REALTY" ? "border-b-2 border-white" : "opacity-70 hover:opacity-100"}`}
+      onClick={() => setActiveTopTab("REALTY")}
+    >
+      REALTY
+    </button>
+    <button 
+      className={`pb-2 font-semibold ${activeTopTab === "WMS" ? "border-b-2 border-white" : "opacity-70 hover:opacity-100"}`}
+      onClick={() => setActiveTopTab("WMS")}
+    >
+      WMS
+    </button>
+  </div>
 
           {/* Financials Content */}
-          <div className="grid grid-cols-5 p-6 bg-[#f8f8f8]">
-            {/* Training Man Days */}
-            <div>
-              <label className="block font-semibold text-gray-800 mb-2">
-                Training Man Days
-              </label>
-              <div className="flex gap-4">
-                <div>
-                  <input
-                    type="number"
-                    placeholder="15"
-                    name="training_days"
-                    value={client.training_days || 0}
-                    onChange={handleChange}
-                    className="p-2 border border-gray-300 rounded text-center h-[55px] w-[65px]"
-                  />
-                  <p className="text-sm text-gray-500 mt-1 text-center">Contract</p>
-                </div>
-                <div>
-                  <input
-                    type="number"
-                    name="training_days_consumed"
-                    value={client.training_days_consumed || 0}
-                    onChange={handleChange}
-                    className="p-2 border border-gray-300 rounded text-center h-[55px] w-[65px]"
-                  />
-                  <p className="text-sm text-gray-500 mt-1 text-center">Consumed</p>
-                </div>
-              </div>
-            </div>
+          {activeTopTab === "FINANCIALS" && (
+  <div className="grid grid-cols-5 p-6 bg-[#f8f8f8]">
+    {/* Existing Financials content */}
+    <div>
+      <label className="block font-semibold text-gray-800 mb-2">
+        Training Man Days
+      </label>
+      <div className="flex gap-4">
+        <div>
+          <input
+            type="number"
+            placeholder="15"
+            name="training_days"
+            value={client.training_days || 0}
+            onChange={handleChange}
+            className="p-2 border border-gray-300 rounded text-center h-[55px] w-[65px]"
+          />
+          <p className="text-sm text-gray-500 mt-1 text-center">Contract</p>
+        </div>
+        <div>
+          <input
+            type="number"
+            name="training_days_consumed"
+            value={client.training_days_consumed || 0}
+            onChange={handleChange}
+            className="p-2 border border-gray-300 rounded text-center h-[55px] w-[65px]"
+          />
+          <p className="text-sm text-gray-500 mt-1 text-center">Consumed</p>
+        </div>
+      </div>
+    </div>
 
             {/* Post-Training Man Days */}
             <div>
@@ -715,51 +1012,59 @@ const AddClientForm = () => {
 
               <div className="flex gap-8 items-center mt-4 ml-20">
                 {[
-                  { key: "cas", label: "CAS?" },
-                  { key: "live", label: "LIVE?" },
-                  { key: "with_sma", label: "WITH SMA?" },
-                  { key: "fs_live", label: "FS LIVE?" },
-                  { key: "active", label: "ACTIVE" },
-                ].map(({ key, label }) => (
-                  <div key={key} className="flex flex-col items-center text-center">
-                    <span className="text-gray-700 text-sm whitespace-nowrap">{label}</span>
-                    <button
-                      className={`w-12 h-6 flex items-center rounded-full p-1 ${
-                        toggles[key] ? "bg-blue-500" : "bg-gray-300"
-                      }`}
-                      onClick={() => handleToggle(key)}
-                    >
-                      <div
-                        className={`w-4 h-4 bg-white rounded-full transform transition-transform ${
-                          toggles[key] ? "translate-x-6" : ""
-                        }`}
-                      ></div>
-                    </button>
-                  </div>
-                ))}
+  { key: "cas", label: "CAS?" },
+  { key: "live", label: "LIVE?" },
+  { key: "with_sma", label: "WITH SMA?" },
+  { key: "fs_live", label: "FS LIVE?" },
+  { key: "active", label: "ACTIVE" },
+].map(({ key, label }) => (
+  <div key={key} className="flex flex-col items-center text-center">
+    <span className="text-gray-700 text-sm whitespace-nowrap">{label}</span>
+    <button
+      className={`w-12 h-6 flex items-center rounded-full p-1 ${
+        toggles[key] ? "bg-blue-500" : "bg-gray-300"
+      }`}
+      onClick={() => handleToggle(key)}
+    >
+      <div
+        className={`w-4 h-4 bg-white rounded-full transform transition-transform ${
+          toggles[key] ? "translate-x-6" : ""
+        }`}
+      ></div>
+    </button>
+  </div>
+))}
               </div>
             </div>
           </div>
+          )}
         </div>
 
-        {/* Modules and Technicians */}
+
+        {/* Modules Section */}
         <div className="mb-6">
           <div className="grid grid-cols-3 gap-4 items-start">
             {/* Main Modules */}
             <div>
               <h3 className="text-gray-800 font-semibold mb-2">Modules / Services</h3>
               <div className="space-y-2">
-                {modules.map((module) => (
-                  <label key={module} className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={selectedModules.includes(module)}
-                      onChange={() => toggleSelection(module, selectedModules, setSelectedModules)}
-                      className="form-checkbox h-4 w-4 text-blue-600"
-                    />
-                    <span className="text-gray-700">{module}</span>
-                  </label>
-                ))}
+              {modules.map((module) => (
+        <label key={module} className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            checked={selectedModules.includes(module)}
+            onChange={() => {
+              const newModules = selectedModules.includes(module)
+                ? selectedModules.filter(m => m !== module)
+                : [...selectedModules, module];
+              setSelectedModules(newModules);
+              setPendingChanges(prev => ({ ...prev, modules: newModules }));
+            }}
+            className="form-checkbox h-4 w-4 text-blue-600"
+          />
+          <span className="text-gray-700">{module}</span>
+        </label>
+      ))}
               </div>
             </div>
 
@@ -767,61 +1072,81 @@ const AddClientForm = () => {
             <div>
               <h3 className="text-gray-800 font-semibold mb-2">Other Modules</h3>
               <div className="space-y-2">
-                {otherModules.map((module) => (
-                  <label key={module} className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={selectedModules.includes(module)}
-                      onChange={() => toggleSelection(module, selectedModules, setSelectedModules)}
-                      className="form-checkbox h-4 w-4 text-blue-600"
-                    />
-                    <span className="text-gray-700">{module}</span>
-                  </label>
-                ))}
+              {otherModules.map((module) => (
+        <label key={module} className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            checked={selectedModules.includes(module)}
+            onChange={() => {
+              const newModules = selectedModules.includes(module)
+                ? selectedModules.filter(m => m !== module)
+                : [...selectedModules, module];
+              setSelectedModules(newModules);
+              setPendingChanges(prev => ({ ...prev, modules: newModules }));
+            }}
+            className="form-checkbox h-4 w-4 text-blue-600"
+          />
+          <span className="text-gray-700">{module}</span>
+        </label>
+      ))}
               </div>
             </div>
 
             {/* Technicians Assigned */}
             <div className="mb-4">
-              <label className="block text-gray-700 mb-2">Technical Assigned</label>
-              {technicianInputs.map((tech, index) => (
-                <div key={index} className="flex items-center gap-2 mb-2">
-                  <select
-                    value={tech}
-                    onChange={(e) => handleTechnicianChange(index, e.target.value)}
-                    className="p-2 border border-gray-300 rounded flex-1 text-sm"
-                  >
-                    <option value="">Select Technical</option>
-                    {technicians.map((technician) => (
-                      <option 
-                        key={technician} 
-                        value={technician}
-                        disabled={selectedTechnicians.includes(technician) && tech !== technician}
-                      >
-                        {technician} ({technicianCodeMap[technician]})
-                      </option>
-                    ))}
-                  </select>
-                  {index === technicianInputs.length - 1 ? (
-                    <button
-                      type="button"
-                      onClick={addTechnicianInput}
-                      className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600 w-10 h-10 flex items-center justify-center"
-                    >
-                      <FaPlus />
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => removeTechnicianInput(index)}
-                      className="bg-red-500 text-white p-2 rounded hover:bg-red-600 w-10 h-10 flex items-center justify-center"
-                    >
-                      ×
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
+  <label className="block text-gray-700 mb-2">Technical Assigned</label>
+  {technicianInputs.map((tech, index) => {
+    // Extract just the name part (before parenthesis) for the select value
+    const techValue = tech.includes('(') ? tech.split(' (')[0] : tech;
+    
+    return (
+      <div key={index} className="flex items-center gap-2 mb-2">
+        <select
+          value={techValue}
+          onChange={(e) => {
+            const selectedName = e.target.value;
+            const selectedCode = technicianCodeMap[selectedName];
+            const displayValue = `${selectedName} (${selectedCode})`;
+            
+            const newInputs = [...technicianInputs];
+            newInputs[index] = displayValue;
+            setTechnicianInputs(newInputs);
+            setSelectedTechnicians(newInputs.filter(t => t && t !== ""));
+          }}
+          className="p-2 border border-gray-300 rounded flex-1 text-sm"
+        >
+          <option value="">Select Technician</option>
+          {technicians.map((name) => (
+            <option 
+              key={name}
+              value={name}
+              disabled={selectedTechnicians.some(t => t.startsWith(`${name} (`)) && !tech.startsWith(`${name} (`)}
+            >
+              {name} ({technicianCodeMap[name]})
+            </option>
+          ))}
+        </select>
+        {index === technicianInputs.length - 1 ? (
+          <button
+            type="button"
+            onClick={addTechnicianInput}
+            className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600 w-10 h-10 flex items-center justify-center"
+          >
+            <FaPlus />
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => removeTechnicianInput(index)}
+            className="bg-red-500 text-white p-2 rounded hover:bg-red-600 w-10 h-10 flex items-center justify-center"
+          >
+            ×
+          </button>
+        )}
+      </div>
+    );
+  })}
+</div>
           </div>
         </div>
 
@@ -848,61 +1173,89 @@ const AddClientForm = () => {
         {/* Tab Content */}
         {activeTab === "Contact Information" && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 mt-6">
-            {[1, 2].map((index) => (
-              <div key={index}>
-                <label className="block font-medium text-gray-700 mb-2">
-                  Contact Person
-                </label>
-                <input
-                  type="text"
-                  placeholder="Sample Name"
-                  className="p-2 border border-gray-300 rounded w-full"
-                />
-              </div>
-            ))}
+            {(client.contact_persons || ["", ""]).map((person, index) => (
+  <div key={index}>
+    <label className="block font-medium text-gray-700 mb-2">
+      Contact Person
+    </label>
+    <input
+      type="text"
+      placeholder="Sample Name"
+      value={person}
+      onChange={(e) => {
+        const updatedContacts = [...(client.contact_persons || ["", ""])];
+        updatedContacts[index] = e.target.value;
+        setClient(prev => ({ ...prev, contact_persons: updatedContacts }));
+      }}
+      className="p-2 border border-gray-300 rounded w-full"
+    />
+  </div>
+))}
+
           </div>
         )}
 
         {activeTab === "Server Information" && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 mt-6">
-            <div>
-              <label className="block font-medium text-gray-700 mb-2">
-                Server's Anydesk ID
-              </label>
-              <input
-                type="text"
-                placeholder="15"
-                value={client.remote_id || ""}
-                onChange={handleChange}
-                className="p-2 border border-gray-300 rounded w-full"
-              />
-            </div>
-            <div>
-              <label className="block font-medium text-gray-700 mb-2">
-                Server's Anydesk Password
-              </label>
-              <input
-                type="text"
-                placeholder="P@ssw0rd123"
-                value={client.remote_pw || ""}
-                onChange={handleChange}
-                className="p-2 border border-gray-300 rounded w-full"
-              />
-            </div>
-            <div>
-              <label className="block font-medium text-gray-700 mb-2">
-                Server's Password
-              </label>
-              <input
-                type="text"
-                placeholder="Password2023"
-                value={client.server_pw || ""}
-                onChange={handleChange}
-                className="p-2 border border-gray-300 rounded w-full"
-              />
-            </div>
-          </div>
-        )}
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 mt-6">
+    {/* Anydesk ID */}
+    <div>
+      <label className="block font-medium text-gray-700 mb-2">
+        Server's Anydesk ID
+      </label>
+      <input
+        type="text"
+        name="remote_id"
+        placeholder="15"
+        value={client.remote_id || ""}
+        onChange={handleChange}
+        className="p-2 border border-gray-300 rounded w-full"
+      />
+    </div>
+
+    {/* Anydesk Password */}
+      <div className="relative">
+        <label className="block font-medium text-gray-700 mb-2">
+          Server's Anydesk Password
+        </label>
+        <input
+          type={showRemotePw ? "text" : "password"} // Toggle between text and password
+          name="remote_pw"
+          placeholder="P@ssw0rd123"
+          value={client.remote_pw || ""}
+          onChange={handleChange}
+          className="p-2 border border-gray-300 rounded w-full pr-10"
+        />
+        <div
+          className="absolute top-[70%] right-3 transform -translate-y-1/2 cursor-pointer text-gray-500"
+          onClick={() => setShowRemotePw(!showRemotePw)} // Toggle visibility
+        >
+          {showRemotePw ? <EyeOff size={20} /> : <Eye size={20} />}
+        </div>
+      </div>
+
+      {/* Server Password */}
+      <div className="relative">
+        <label className="block font-medium text-gray-700 mb-2">
+          Server's Password
+        </label>
+        <input
+          type={showServerPw ? "text" : "password"} // Toggle between text and password
+          name="server_pw"
+          placeholder="Password2023"
+          value={client.server_pw || ""}
+          onChange={handleChange}
+          className="p-2 border border-gray-300 rounded w-full pr-10"
+        />
+        <div
+          className="absolute top-[70%] right-3 transform -translate-y-1/2 cursor-pointer text-gray-500"
+          onClick={() => setShowServerPw(!showServerPw)} // Toggle visibility
+        >
+          {showServerPw ? <EyeOff size={20} /> : <Eye size={20} />}
+      </div>
+    </div>
+  </div>
+)}
+
 
         {/* Attachment Tab */}
         {activeTab === "Attachment" && (
@@ -929,7 +1282,7 @@ const AddClientForm = () => {
                   <div>
                     <div 
                       className="flex items-center space-x-2 mb-8 mt-4" 
-                      onClick={() => handleAddFileClick('clientServiceForm')}
+                      onClick={() => handleAddFileClick('clientService')}
                     >
                       <FaPlus className="text-blue-500 cursor-pointer" />
                       <span className="font-semibold text-gray-700 cursor-pointer">Add New File</span>
@@ -938,41 +1291,48 @@ const AddClientForm = () => {
                     <table className="min-w-full bg-white border border-gray-300">
                     <thead>
   <tr className="border-b bg-gray-200">
-    <th className="p-2 text-left">ID</th>
+    <th className="p-2 text-left">File Name</th>
     <th className="p-2 text-left">Upload Date</th>
     <th className="p-2 text-left">Signed Date</th>
-    <th className="p-2 text-left">File Name</th>
     <th className="p-2 text-left">Actions</th>
   </tr>
 </thead>
                       <tbody>
-                        {customerServiceFiles.map((file) => (
-                          <tr key={file.file_id} className="border-b">
-                            <td className="p-2">{file.file_id}</td>
+  {clientServiceFiles.map((file) => (
+  <tr key={file.file_id} className="border-b">
+                                <td className="p-2">{file.original_name}</td>
                             <td className="p-2">
                               {file.upload_date ? new Date(file.upload_date).toLocaleDateString() : 'N/A'}
                             </td>
                             <td className="p-2">
         {file.signed_date ? new Date(file.signed_date).toLocaleDateString() : 'N/A'}
       </td>
-                            <td className="p-2">{file.original_name}</td>
                             <td className="p-2 flex space-x-2">
                               <button
-                                onClick={() => handleViewFile(file)}
-                               className="px-2 py-1 rounded bg-blue-500 text-white hover:bg-blue-600"
-                              >
-                                View
-                              </button>
-                              <button
-                                onClick={() => handleDownloadFile(file)}
-                                className="px-2 py-1 rounded bg-green-500 text-white hover:bg-green-600"
-                              >
-                                Download
-                              </button>
+                onClick={() => handleViewFile(file)}
+                className="p-2 text-blue-500 hover:text-blue-700"
+                title="View"
+              >
+                <FaEye />
+              </button>
+              <button
+                onClick={() => handleDownloadFile(file)}
+                className="p-2 text-green-500 hover:text-green-700"
+                title="Download"
+              >
+                <FaDownload />
+              </button>
+              <button
+                onClick={() => handleDeleteFile(file)}
+                className="p-2 text-red-500 hover:text-red-700"
+                title="Delete"
+              >
+                <FaTrash />
+              </button>
                             </td>
                           </tr>
-                        ))}
-                      </tbody>
+))}
+</tbody>
                     </table>
                   </div>
                 )}
@@ -990,37 +1350,44 @@ const AddClientForm = () => {
                     <table className="min-w-full bg-white border border-gray-300">
                       <thead>
                         <tr className="border-b bg-gray-200">
-                          <th className="p-2 text-left">ID</th>
+                          <th className="p-2 text-left">File Name</th>
                           <th className="p-2 text-left">Upload Date</th>
                           <th className="p-2 text-left">Signed Date</th>
-                          <th className="p-2 text-left">File Name</th>
                           <th className="p-2 text-left">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
                         {turnOverFiles.map((file) => (
                           <tr key={file.file_id} className="border-b">
-                            <td className="p-2">{file.file_id}</td>
+                            <td className="p-2">{file.original_name}</td>
                             <td className="p-2">
                               {file.upload_date ? new Date(file.upload_date).toLocaleDateString() : 'N/A'}
                             </td>
                             <td className="p-2">
         {file.signed_date ? new Date(file.signed_date).toLocaleDateString() : 'N/A'}
       </td>
-                            <td className="p-2">{file.original_name}</td>
                             <td className="p-2 flex space-x-2">
                               <button
-                                onClick={() => handleViewFile(file)}
-                                className="px-2 py-1 rounded bg-blue-500 text-white hover:bg-blue-600"
-                              >
-                                View
-                              </button>
-                              <button
-                                onClick={() => handleDownloadFile(file)}
-                                className="px-2 py-1 rounded bg-green-500 text-white hover:bg-green-600"
-                              >
-                                Download
-                              </button>
+                onClick={() => handleViewFile(file)}
+                className="p-2 text-blue-500 hover:text-blue-700"
+                title="View"
+              >
+                <FaEye />
+              </button>
+              <button
+                onClick={() => handleDownloadFile(file)}
+                className="p-2 text-green-500 hover:text-green-700"
+                title="Download"
+              >
+                <FaDownload />
+              </button>
+              <button
+                onClick={() => handleDeleteFile(file)}
+                className="p-2 text-red-500 hover:text-red-700"
+                title="Delete"
+              >
+                <FaTrash />
+              </button>
                             </td>
                           </tr>
                         ))}
@@ -1047,17 +1414,16 @@ const AddClientForm = () => {
             <table className="min-w-full bg-white border border-gray-300">
               <thead>
                 <tr className="border-b bg-gray-200">
-                  <th className="p-2 text-left">LN</th>
+                 <th className="p-2 text-left">File Name</th>
                   <th className="p-2 text-left">Date Uploaded</th>
                   <th className="p-2 text-left">Date Signed</th>
-                  <th className="p-2 text-left">File Name</th>
                   <th className="p-2 text-left">Action</th>
                 </tr>
               </thead>
               <tbody>
                 {smaInformationFiles.map((file) => (
                   <tr key={file.file_id} className="border-b">
-                    <td className="p-2">{file.file_id}</td>
+                <td className="p-2">{file.original_name}</td>
                     <td className="p-2">
                       {file.upload_date ? new Date(file.upload_date).toLocaleDateString() : 'N/A'}
                     </td>
@@ -1074,20 +1440,28 @@ const AddClientForm = () => {
                         className="border border-gray-300 p-1"
                       />
                     </td>
-                    <td className="p-2">{file.original_name}</td>
                     <td className="p-2 flex space-x-2">
                       <button
-                        onClick={() => handleViewFile(file)}
-                        className="px-2 py-1 rounded bg-blue-500 text-white hover:bg-blue-600"
-                      >
-                        View
-                      </button>
-                      <button
-                        onClick={() => handleDownloadFile(file)}
-                        className="px-2 py-1 rounded bg-green-500 text-white hover:bg-green-600"
-                      >
-                        Download
-                      </button>
+                onClick={() => handleViewFile(file)}
+                className="p-2 text-blue-500 hover:text-blue-700"
+                title="View"
+              >
+                <FaEye />
+              </button>
+              <button
+                onClick={() => handleDownloadFile(file)}
+                className="p-2 text-green-500 hover:text-green-700"
+                title="Download"
+              >
+                <FaDownload />
+              </button>
+              <button
+                onClick={() => handleDeleteFile(file)}
+                className="p-2 text-red-500 hover:text-red-700"
+                title="Delete"
+              >
+                <FaTrash />
+              </button>
                     </td>
                   </tr>
                 ))}
@@ -1098,13 +1472,23 @@ const AddClientForm = () => {
 
         {/* Save Button */}
         <div className="flex justify-center mt-6">
-          <button
-            className="bg-purple-500 text-white font-semibold px-8 py-3 rounded-lg shadow-md hover:bg-purple-400 transition duration-300"
-            onClick={handleSave}
-            disabled={isSaving}
-          >
-            {isSaving ? "SAVING..." : (isViewMode ? "UPDATE" : "SAVE")}
-          </button>
+        <button
+  className="bg-purple-500 text-white font-semibold px-8 py-3 rounded-lg shadow-md hover:bg-purple-400 transition duration-300"
+  onClick={handleSave}
+  disabled={isSaving}
+>
+  {isSaving ? (
+    <>
+      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      {isViewMode ? "UPDATING..." : "SAVING..."}
+    </>
+  ) : (
+    isViewMode ? "UPDATE" : "SAVE"
+  )}
+</button>
         </div>
       </div>
     </div>
