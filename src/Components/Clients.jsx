@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import AddClientForm from "./AddClient";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faBell, faUser, faSignOutAlt, faSort, faSortUp, faSortDown } from "@fortawesome/free-solid-svg-icons";
+import { faBell, faUser, faSignOutAlt, faSort, faSortUp, faSortDown, faPlus } from "@fortawesome/free-solid-svg-icons";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../Authentication/AuthContext";
-import Layout from "../Layout";
+import { GetAPI  } from "../api";
 
 const ClientsInformation = () => {
   const { user, logout } = useAuth();
@@ -59,21 +59,37 @@ const ClientsInformation = () => {
     setFilteredClients(sortedItems);
   }, [sortConfig]);
 
+  // const fetchClients = async () => {
+  //   try {
+  //     const response = await fetch("http://127.0.0.1:8000/api/getClients", {
+  //       headers: { Accept: "application/json" }
+  //     });
+  //     if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+  //     const data = await response.json();
+  //     setClients(data);
+  //     setFilteredClients(data);
+  //     setLoading(false);
+  //   } catch (error) {
+  //     console.error("Error fetching clients:", error);
+  //     setLoading(false);
+  //   }
+  // };
+
   const fetchClients = async () => {
-    try {
-      const response = await fetch("http://192.168.56.1:82/api/getClients", {
-        headers: { Accept: "application/json" }
-      });
-      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-      const data = await response.json();
-      setClients(data);
-      setFilteredClients(data);
-      setLoading(false);
-    } catch (error) {
-      console.error("Error fetching clients:", error);
-      setLoading(false);
-    }
-  };
+  try {
+    const response = await GetAPI("getClients", {}, {
+      Accept: "application/json",
+    });
+
+    const data = response.data;
+    setClients(data);
+    setFilteredClients(data);
+    setLoading(false);
+  } catch (error) {
+    console.error("Error fetching clients:", error);
+    setLoading(false);
+  }
+};
 
   const handleSearchChange = (e, key) => {
     const value = e.target.value.toLowerCase();
@@ -121,9 +137,9 @@ const ClientsInformation = () => {
 
   return (
 
-  <div className="p-2 bg-blue-50 mt-10">
+  <div className="p-2 bg-blue-50 mt-8">
   {/* Header */}
-  <div className="absolute top-6 right-6 flex items-center gap-4">
+  <div className="absolute top-3 right-6 flex items-center gap-4">
     <FontAwesomeIcon icon={faBell} className="w-5 h-5 text-gray-600 hover:text-blue-700 cursor-pointer transition-colors" />
     <div className="relative">
       <div onClick={() => setIsDropdownOpen(!isDropdownOpen)} className="cursor-pointer">
@@ -148,13 +164,13 @@ const ClientsInformation = () => {
   </div>
 
   {/* Title and Button */}
-  <div className="flex justify-between items-center mt-4 mb-4">
+  <div className="flex justify-between items-center mt-2 mb-2">
     <h2 className="text-2xl font-bold text-gray-800">Clients Information</h2>
     <button
-      className="bg-blue-700 text-white px-5 py-2 rounded-lg hover:bg-blue-900 transition"
+      className="bg-blue-700 text-white px-4 py-2 rounded-full hover:bg-blue-900 transition"
       onClick={() => setShowAddClientForm(true)}
     >
-      + Add New Client
+              <FontAwesomeIcon icon={faPlus} /> Add New Client
     </button>
   </div>
 
@@ -163,10 +179,10 @@ const ClientsInformation = () => {
     <p className="text-center text-gray-500">Loading clients...</p>
   ) : (
     <div className="bg-white shadow-lg rounded-xl overflow-hidden">
-      <div className="max-h-[65vh] overflow-y-auto">
+      <div className="max-h-[70vh] overflow-y-auto">
         <table className="w-full text-xs text-center">
           <thead className="bg-gray-200 sticky top-0 z-10">
-            <tr className="bg-blue-700 text-white text-left">
+            <tr className="bg-blue-700 text-white text-center">
               {[
                 { key: "client_code", label: "Client Code" },
                 { key: "client_name", label: "Client Name" },

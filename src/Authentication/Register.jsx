@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import Swal from 'sweetalert2';
+import { PostAPI } from "../api";
 
 function Register() {
     const [formData, setFormData] = useState({
@@ -25,7 +26,8 @@ function Register() {
     
         setLoading(true);
         try {
-            const response = await axios.post('http://192.168.150.1:82/api/register', formData);
+            // const response = await axios.post('http://192.168.150.1:82/api/register', formData);
+                  const response = await PostAPI("register", formData);
             
             // Ensure API returns userId correctly
             const { userId } = response.data.user;  

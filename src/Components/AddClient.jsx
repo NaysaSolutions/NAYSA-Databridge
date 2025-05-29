@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBell, faUser, faSignOutAlt, faArrowLeft, faArrowUp } from "@fortawesome/free-solid-svg-icons";
 import { useNavigate, useLocation } from "react-router-dom";
-import { FaPlus } from "react-icons/fa";
+import { FaMinus, FaPlus } from "react-icons/fa";
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import bcrypt from 'bcryptjs';
@@ -11,6 +11,7 @@ import { FaTrash, FaDownload, FaEye } from 'react-icons/fa';
 import Layout from "../Layout";
 
 import FileUpload from "./FileUpload";
+import { FaDeleteLeft } from "react-icons/fa6";
 
 const AddClientForm = () => {
   const navigate = useNavigate();
@@ -25,13 +26,22 @@ const AddClientForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showRemotePw, setShowRemotePw] = useState(false);
   const [showServerPw, setShowServerPw] = useState(false);
-  const [activeTopTab, setActiveTopTab] = useState("FINANCIALS");
+
+
+
 
   // Initialize all state at the top
-  const [technicianInputs, setTechnicianInputs] = useState([""]);
-  const [selectedTechnicians, setSelectedTechnicians] = useState([]);
+
+  // const [technicianInputs, setTabTechnicians] = useState([""]);
+  // const [selectedTechnicians, setSelectedTechnicians] = useState([]);
+  // const selectedTechnicians = (tabTechnicians[activeTopTab] || []).filter(t => t !== "");
+
   const [clientTechnicians, setClientTechnicians] = useState([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  // const [selectedModules, setSelectedModules] = useState([]);
+  
+
  // Initialize file states properly
 const [clientServiceFiles, setclientServiceFiles] = useState([]);
 const [turnOverFiles, setTurnOverFiles] = useState([]);
@@ -41,12 +51,145 @@ const [smaInformationFiles, setSmaInformationFiles] = useState([]);
   const [editedFiles, setEditedFiles] = useState({});
   const [isSaving, setIsSaving] = useState(false);
   const [isViewMode, setIsViewMode] = useState(false);
-  const [selectedModules, setSelectedModules] = useState([]);
+  
+
   const [visibleCustomerServiceRows, setVisibleCustomerServiceRows] = useState(10);
   const [visibleTurnOverRows, setVisibleTurnOverRows] = useState(10);
   const [visibleSmaRows, setVisibleSmaRows] = useState(10);
   const [activeTab, setActiveTab] = useState("Contact Information");
   const [activeTab2, setActiveTab2] = useState("Client Service Form");
+
+  // START MODULE
+
+const [activeTopTab, setActiveTopTab] = useState("FINANCIALS");
+const [tabTechnicians, setTabTechnicians] = useState({
+  FINANCIALS: [""],
+  "HR-PAY": [""],
+  REALTY: [""],
+  WMS: [""]
+});
+
+
+  const [tabModules, setTabModules] = useState({
+  "FINANCIALS": [],
+  "HR-PAY": [],
+  "REALTY": [],
+  "WMS": [],
+});
+
+const [tabMainModules, setTabMainModules] = useState({
+
+  "FINANCIALS": [
+    "General Ledger",
+    "Accounts Payable",
+    "Sales",
+    "Accounts Receivable",
+    "Purchasing",
+    "FG Inventory",
+    "MS Inventory",
+    "RM Inventory",
+    "VE Inventory",],
+
+  "HR-PAY": [
+    "HR Management and Payroll",
+    "HR Information System",],
+
+  "REALTY": [
+    "Realty",
+    "In-House Financing"],
+
+  "WMS": [
+    "Inbound", 
+    "Outbound",
+    "Other Activities",
+    "Billing"],
+
+});
+
+const [tabOtherModules, setTabOtherModules] = useState({
+
+  "FINANCIALS": [
+    "Fixed Assets",
+    "Budget",
+    "Bank Recon",
+    "Production",
+    "Importation",
+    "Financing",
+    "Leasing"
+  ],
+
+  "HR-PAY": [
+    "Employee Portal",
+    "Employee Portal Cloud",],
+
+  // "REALTY": [
+  //   "Property Management", 
+  //   "Valuation"],
+
+  // "WMS": [
+  //   "Logistics", 
+  //   "Reports"],
+
+});
+
+
+// Now you can safely access these
+const technicianInputs = tabTechnicians[activeTopTab] || [""];
+const selectedModules = tabModules[activeTopTab] || [];
+
+
+const handleModuleToggle = (module) => {
+  const current = tabModules[activeTopTab] || [];
+  const isChecked = current.includes(module);
+  const updated = isChecked
+    ? current.filter(m => m !== module)
+    : [...current, module];
+
+  setTabModules(prev => ({ ...prev, [activeTopTab]: updated }));
+  setPendingChanges(prev => ({ ...prev, modules: updated }));
+};
+
+
+const handleTechnicianChange = (index, selectedName) => {
+  const selectedCode = technicianCodeMap[selectedName];
+  const displayValue = `${selectedName} (${selectedCode})`;
+
+  setTabTechnicians(prev => {
+    const newInputs = [...(prev[activeTopTab] || [])];
+    newInputs[index] = displayValue;
+
+    return {
+      ...prev,
+      [activeTopTab]: newInputs
+    };
+  });
+};
+
+const addTechnicianInput = () => {
+  setTabTechnicians(prev => {
+    const currentInputs = prev[activeTopTab] || [""];
+    return {
+      ...prev,
+      [activeTopTab]: [...currentInputs, ""]
+    };
+  });
+};
+
+const removeTechnicianInput = (index) => {
+  setTabTechnicians(prev => {
+    const currentInputs = prev[activeTopTab] || [""];
+    const newInputs = currentInputs.filter((_, i) => i !== index);
+    return {
+      ...prev,
+      [activeTopTab]: newInputs.length > 0 ? newInputs : [""]
+    };
+  });
+};
+
+
+// END MODULE
+
+
 
   const [client, setClient] = useState({
   client_code: "",
@@ -68,6 +211,7 @@ const [smaInformationFiles, setSmaInformationFiles] = useState([]);
   remote_id: "",
   remote_pw: "",
   server_pw: "",
+  helpdesk: "",
   with_sma: "N",
   active: "N",
   contact_persons: ["", ""]
@@ -84,26 +228,38 @@ const [smaInformationFiles, setSmaInformationFiles] = useState([]);
 
 
 
-  const modules = [
-    "General Ledger",
-    "Accounts Payable",
-    "Sales",
-    "Accounts Receivable",
-    "Purchasing",
-    "FG Inventory",
-    "MS Inventory",
-    "RM Inventory",
-    "VE Inventory",
-  ];
+  // const FinancialsModules = [
+  //   "General Ledger",
+  //   "Accounts Payable",
+  //   "Sales",
+  //   "Accounts Receivable",
+  //   "Purchasing",
+  //   "FG Inventory",
+  //   "MS Inventory",
+  //   "RM Inventory",
+  //   "VE Inventory",
+  // ];
 
-  const otherModules = [
-    "Fixed Assets",
-    "Budget",
-    "Bank Recon",
-    "Production",
-    "Importation",
-    "Financing",
-  ];
+  // const FinancialsOtherModules = [
+  //   "Fixed Assets",
+  //   "Budget",
+  //   "Bank Recon",
+  //   "Production",
+  //   "Importation",
+  //   "Financing",
+  // ];
+
+  // const HrpayModules = [
+  //   "HR Management and Payroll",
+  //   "HR Information System",
+  // ];
+
+  // const HrpayOtherModules = [
+  //   "Employee Portal",
+  //   "Employee Portal Cloud",
+  // ];
+  
+
 
   const technicians = [
     "France Rosimo",
@@ -133,6 +289,11 @@ const [smaInformationFiles, setSmaInformationFiles] = useState([]);
   };
 
 
+  // 👇 PLACE THIS RIGHT BEFORE JSX
+  const currentMainModules = tabMainModules[activeTopTab] || [];
+  const currentOtherModules = tabOtherModules[activeTopTab] || [];
+  const currentSelectedModules = tabModules[activeTopTab] || [];
+
   // Scroll handling
   useEffect(() => {
     const handleScroll = () => {
@@ -142,7 +303,21 @@ const [smaInformationFiles, setSmaInformationFiles] = useState([]);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  
   // When initializing from existing data
+// useEffect(() => {
+//   if (location.state) {
+//     setClient(location.state);
+//     setIsViewMode(true);
+//     fetchClientData(location.state.client_code)
+//       .then(data => {
+//         if (data) {
+//           setSelectedModules(data.modules?.map(m => m.module_name) || []);
+//         }
+//       });
+//   }
+// }, [location.state]);
+
 useEffect(() => {
   if (location.state) {
     setClient(location.state);
@@ -150,11 +325,17 @@ useEffect(() => {
     fetchClientData(location.state.client_code)
       .then(data => {
         if (data) {
-          setSelectedModules(data.modules?.map(m => m.module_name) || []);
+          // Instead of setSelectedModules, update tabModules for the active tab:
+          const modulesForTab = data.modules?.map(m => m.module_name) || [];
+          setTabModules(prev => ({
+            ...prev,
+            [activeTopTab]: modulesForTab
+          }));
         }
       });
   }
-}, [location.state]);
+}, [location.state, activeTopTab]);
+
 
   // Fetch client files when client code changes
   useEffect(() => {
@@ -179,7 +360,7 @@ useEffect(() => {
   const fetchClientFiles = async () => {
     try {
       const apiBase = process.env.NODE_ENV === 'development' 
-        ? 'http://192.168.150.1:82/api' 
+        ? 'http://127.0.0.1:8000/api' 
         : 'http://192.168.56.1:82/api';
 
       const [csResponse, toResponse, smaResponse] = await Promise.all([
@@ -218,7 +399,7 @@ useEffect(() => {
     setIsLoading(true); // Set loading to true when starting fetch
     
     const apiBase = process.env.NODE_ENV === 'development' 
-      ? 'http://192.168.56.1:82/api' 
+      ? 'http://127.0.0.1:8000/api' 
       : 'http://192.168.56.1:82/api';
 
     try {
@@ -250,11 +431,26 @@ useEffect(() => {
       }
 
       // Process technicians data
+      // const receivedTechnicians = data.technicians || [];
+      // const technicianDisplayNames = receivedTechnicians.map(tech => {
+      //   const name = Object.entries(technicianCodeMap).find(([_, c]) => c === tech.tech_code)?.[0] || tech.tech_code;
+      //   return `${name} (${tech.tech_code})`;
+      // });
+
+      
       const receivedTechnicians = data.technicians || [];
-      const technicianDisplayNames = receivedTechnicians.map(tech => {
+
+      const filteredTechnicians = receivedTechnicians.filter(t => t.app_type === activeTopTab);
+
+      const technicianDisplayNames = filteredTechnicians.map(tech => {
         const name = Object.entries(technicianCodeMap).find(([_, c]) => c === tech.tech_code)?.[0] || tech.tech_code;
         return `${name} (${tech.tech_code})`;
       });
+
+      // setTechnicianInputs(technicianDisplayNames);
+
+
+
 
       // Transform and normalize client data
       const clientData = data.clients || {};
@@ -278,19 +474,40 @@ useEffect(() => {
         remote_id: clientData.remote_id || '',
         remote_pw: clientData.remote_pw || '',
         server_pw: clientData.server_pw || '',
+        helpdesk: clientData.helpdesk || '',
         with_sma: clientData.with_sma || 'N',
         active: clientData.active || 'N'
       };
 
       console.log('Transformed client data:', transformedClient);
 
+      // // Update state
+      // setClient(transformedClient);
+      // setTabTechnicians([...technicianDisplayNames, ""]);
+      // setSelectedTechnicians(technicianDisplayNames);
+      // setClientTechnicians(receivedTechnicians.map(t => t.tech_code));
+      // setApplications(data.applications || []);
+      // setSelectedModules(data.modules?.map(m => m.module_name) || []);
       // Update state
-      setClient(transformedClient);
-      setTechnicianInputs([...technicianDisplayNames, ""]);
-      setSelectedTechnicians(technicianDisplayNames);
-      setClientTechnicians(receivedTechnicians.map(t => t.tech_code));
-      setApplications(data.applications || []);
-      setSelectedModules(data.modules?.map(m => m.module_name) || []);
+          setClient(transformedClient);
+
+          // Set technicians per tab
+          setTabTechnicians(prev => ({
+            ...prev,
+            [activeTopTab]: [...technicianDisplayNames, ""]
+          }));
+
+          // setSelectedTechnicians(technicianDisplayNames);
+          setClientTechnicians(receivedTechnicians.map(t => t.tech_code));
+
+          // Set modules per tab
+          setTabModules(prev => ({
+            ...prev,
+            [activeTopTab]: data.modules?.map(m => m.module_name) || []
+          }));
+
+          setApplications(data.applications || []);
+
 
       return data;
 
@@ -313,27 +530,27 @@ useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleTechnicianChange = (index, value) => {
-    const newInputs = [...technicianInputs];
-    newInputs[index] = value;
-    setTechnicianInputs(newInputs);
-    setSelectedTechnicians(newInputs.filter(t => t !== ""));
-  };
+  // const handleTechnicianChange = (index, value) => {
+  //   const newInputs = [...technicianInputs];
+  //   newInputs[index] = value;
+  //   setTabTechnicians(newInputs);
+  //   setSelectedTechnicians(newInputs.filter(t => t !== ""));
+  // };
 
-  const addTechnicianInput = () => {
-    if (technicianInputs[technicianInputs.length - 1] !== "") {
-      setTechnicianInputs([...technicianInputs, ""]);
-    }
-  };
+  // const addTechnicianInput = () => {
+  //   if (technicianInputs[technicianInputs.length - 1] !== "") {
+  //     setTabTechnicians([...technicianInputs, ""]);
+  //   }
+  // };
 
-  const removeTechnicianInput = (index) => {
-    if (technicianInputs.length > 1) {
-      const newInputs = [...technicianInputs];
-      newInputs.splice(index, 1);
-      setTechnicianInputs(newInputs);
-      setSelectedTechnicians(newInputs.filter(t => t !== ""));
-    }
-  };
+  // const removeTechnicianInput = (index) => {
+  //   if (technicianInputs.length > 1) {
+  //     const newInputs = [...technicianInputs];
+  //     newInputs.splice(index, 1);
+  //     setTabTechnicians(newInputs);
+  //     setSelectedTechnicians(newInputs.filter(t => t !== ""));
+  //   }
+  // };
 
   const handleToggle = (key) => {
   const newValue = !toggles[key];
@@ -356,7 +573,7 @@ useEffect(() => {
   const handleFileSelect = async (files, uploadDate, signedDate) => {
   const getApiBase = () => {
     return process.env.NODE_ENV === 'development' 
-      ? 'http://192.168.56.1:82/api' 
+      ? 'http://127.0.0.1:8000/api' 
       : 'http://192.168.56.1:82/api';
   };
 
@@ -509,7 +726,7 @@ const handleDeleteFile = async (file) => {
     if (!confirm.isConfirmed) return;
 
     const apiBase = process.env.NODE_ENV === 'development' 
-      ? 'http://192.168.150.1:82/api' 
+      ? 'http://127.0.0.1:8000/api' 
       : 'http://192.168.56.1:82/api';
 
     const response = await axios.delete(`${apiBase}/file/${file.file_id}`, {
@@ -543,7 +760,7 @@ const handleDeleteFile = async (file) => {
   const handleViewFile = async (file) => {
 
     const getApiBase = () => {
-      return 'http://192.168.150.1:82/api';
+      return 'http://127.0.0.1:8000/api';
     };
 
     try {
@@ -576,7 +793,7 @@ const handleDeleteFile = async (file) => {
   
   const handleDownloadFile = async (file) => {
     const getApiBase = () => {
-      return 'http://192.168.150.1:82/api';
+      return 'http://127.0.0.1:8000/api';
     };
     
     try {
@@ -637,6 +854,7 @@ const handleDeleteFile = async (file) => {
 
   const handleSave = async () => {
   const moduleCodeMap = {
+
     'General Ledger': 'GL',
     'Accounts Payable': 'AP',
     'Sales': 'SA',
@@ -644,19 +862,91 @@ const handleDeleteFile = async (file) => {
     'Purchasing': 'PUR',
     'FG Inventory': 'FGINV',
     'MS Inventory': 'MSINV',
-    'RM Inventory': 'RM Inventory',
+    'RM Inventory': 'RMINV',
+    'VE Inventory': 'VEINV',
     'Fixed Assets': 'FA',
     'Budget': 'BUD',
     'Bank Recon': 'BR',
     'Production': 'PROD',
     'Importation': 'IMP',
-    'Financing': 'FIN'
+    'Financing': 'FIN',
+    'Leasing': 'LS',
+
+    'HR Management and Payroll': 'HRPAY',
+    'HR Information System': 'HRIS',
+    'Employee Portal': 'HRPortal',
+    'Employee Portal Cloud': 'HRPortalCloud',
+
+    'Realty': 'REALTY',
+    'In-House Financing': 'INHOUSE',
+
+    'Inbound': 'INB',
+    'Outbound': 'OUTB',
+    'Other Activities': 'OTH',
+    'Billing': 'AR',
+
   };
 
   try {
     setIsSaving(true);
 
-    const technicianCodes = selectedTechnicians.map(tech => {
+    // const technicianCodes = selectedTechnicians.map(tech => {
+    //   const matches = tech.match(/\(([^)]+)\)/);
+    //   return matches ? matches[1] : tech;
+    // });
+
+
+    // Get technician inputs for current tab, filtering empty strings
+    const techniciansToSave = (tabTechnicians[activeTopTab] || []).filter(t => t !== "");
+
+    // Flatten all technicians across tabs with module type
+    const clientTechnicalsPayload = Object.entries(tabTechnicians).flatMap(
+      ([appType, technicians]) =>
+        technicians
+          .filter(t => t !== "") // remove empty inputs
+          .map(t => {
+            // Extract tech_code from string like "Name (code)"
+            const matches = t.match(/\(([^)]+)\)/);
+            const tech_code = matches ? matches[1] : t;
+            return {
+              tech_code,
+              app_type: appType
+            };
+          })
+    );
+
+    const allSelectedModules = Object.values(tabModules).flat();
+  //   const clientModulesPayload = allSelectedModules.map(moduleName => ({
+  //   module_name: moduleName,
+  //   module_code: moduleCodeMap[moduleName] || null,
+  //   module_type: activeTopTab, // 👈 include the current tab here
+  // }));
+
+//   const clientModulesPayload = Object.entries(tabModules).flatMap(([moduleType, moduleNames]) =>
+//   moduleNames.map(moduleName => ({
+//     module_name: moduleName,
+//     module_code: moduleCodeMap[moduleName] || null,
+//     module_type: moduleType, // correct module type here
+//   }))
+// ); 
+
+  const selectedModulesForActiveTab = tabModules[activeTopTab] || [];
+  const allowedModules = tabMainModules[activeTopTab] || [];
+  const filteredModules = selectedModulesForActiveTab.filter(module =>
+    allowedModules.includes(module)
+  );
+
+  const clientModulesPayload = filteredModules.map(moduleName => ({
+    module_name: moduleName,
+    module_code: moduleCodeMap[moduleName] || null,
+    module_type: activeTopTab,
+  }));
+
+
+
+
+    // Extract codes from display strings
+    const technicianCodes = techniciansToSave.map(tech => {
       const matches = tech.match(/\(([^)]+)\)/);
       return matches ? matches[1] : tech;
     });
@@ -686,17 +976,20 @@ const handleDeleteFile = async (file) => {
           post_training_days_consumed: client.post_training_days_consumed ?? 0,
           fs_generation_consumed: client.fs_generation_consumed ?? 0,
           contact_persons: client.contact_persons,
-          client_modules: selectedModules.map(module => ({
-            module_name: module,
-            module_code: moduleCodeMap[module] 
-          })),
-          client_technicals: technicianCodes.map(code => ({ tech_code: code }))
+          helpdesk: client.helpdesk,
+          // client_modules: selectedModules.map(module => ({
+          //   module_name: module,
+          //   module_code: moduleCodeMap[module] 
+          // })),       
+          client_modules: clientModulesPayload,
+          // client_technicals: technicianCodes.map(code => ({ tech_code: code }))
+          client_technicals: clientTechnicalsPayload,
         }
       })
     };
 
     const apiBase = process.env.NODE_ENV === 'development' 
-      ? 'http://192.168.150.1:82/api' 
+      ? 'http://127.0.0.1:8000/api' 
       : 'http://192.168.56.1:82/api';
 
     const response = await axios.post(`${apiBase}/client/save`, payload, {
@@ -735,13 +1028,13 @@ const handleDeleteFile = async (file) => {
 };
 
   return (
-    <div className="p-4 bg-white min-h-screen">
+    <div className="p-4 bg-blue-50 min-h-screen">
 
       {/* Loading Overlay */}
       {isLoading && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-4 rounded-lg shadow-lg flex flex-col items-center">
-            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-purple-500 mb-4"></div>
+            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-800 mb-4"></div>
             <p className="text-gray-700">Loading client data...</p>
           </div>
         </div>
@@ -812,7 +1105,7 @@ const handleDeleteFile = async (file) => {
         {isViewMode ? "Client Information" : "Add New Client Information"}
       </h1>
 
-      <div className="bg-blue-100 shadow-xl p-6 rounded-lg">
+      <div className="bg-white shadow-xl p-6 rounded-lg">
         {/* Basic Client Info */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 text-sm">
           <div>
@@ -859,18 +1152,18 @@ const handleDeleteFile = async (file) => {
 
         {/* Address */}
         <div className="mb-4 text-sm">
-          <label className="block font-bold text-gray-800 mb-2text-sm">Address</label>
+          <label className="block font-bold text-gray-800 mb-2 text-sm">Address</label>
           <textarea
             type="text"
             name="main_address"
             value={client.main_address || ""}
             onChange={handleChange}
-            className="mt-1 p-2 border border-gray-300 rounded-lg w-full h-[127px] text-sm"
+            className="mt-1 p-2 border border-gray-300 rounded-lg w-full h-[80px] text-sm"
           />
         </div>
 
         {/* Number of Users */}
-        <div className="grid grid-cols-6 items-center gap-4 mb-4 text-sm">
+        {/* <div className="grid grid-cols-6 items-center gap-4 mb-4 text-sm">
           <div className="col-span-2">
             <label htmlFor="cal" className="block font-bold text-gray-800 mb-2 text-sm">
               Number of Users
@@ -884,46 +1177,56 @@ const handleDeleteFile = async (file) => {
               className="mt-1 p-2 border border-gray-300 rounded-lg w-full"
             />
           </div>
+        </div> */}
+
+{/* APPLICATION TABS */}
+<div className="mt-6 bg-blue-50 text-sm lg:text-base">
+  <div className="flex flex-wrap justify-center sm:justify-start gap-4 sm:gap-10 bg-blue-600 text-white rounded-t-md p-3 lg:gap-[220px]">
+  {["FINANCIALS", "HR-PAY", "REALTY", "WMS"].map(tab => (
+    <button 
+      key={tab}
+      className={`pb-2 font-semibold ${
+        activeTopTab === tab ? "border-b-2 border-white" : "opacity-70 hover:opacity-100"
+      }`}
+      onClick={() => setActiveTopTab(tab)}
+    >
+      {tab}
+    </button>
+  ))}
+</div>
+
+
+  {/* Financials Content */}
+  {activeTopTab === "FINANCIALS" && (
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 p-6 gap-4 text-sm">
+
+    
+    {/* Number of Users */}
+
+    <div>
+      <label className="block font-semibold text-gray-800 mb-2">
+        No. of Users
+      </label>
+      <div className="flex gap-3">
+        <div>
+          <input
+            type="number"
+            placeholder="Count"
+            name="cal"
+            value={client.cal || 0}
+            onChange={handleChange}
+            className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
+          />
+          <p className="text-sm text-gray-500 mt-1 text-center">Count</p>
         </div>
+      </div>
+    </div>
 
-        {/* Financials Tab */}
-<div className="mt-6">
-  <div className="flex space-x-10 bg-blue-500 gap-[200px] text-white rounded-t-md p-4">
-    <button 
-      className={`pb-2 font-semibold ${activeTopTab === "FINANCIALS" ? "border-b-2 border-white" : "opacity-70 hover:opacity-100"}`}
-      onClick={() => setActiveTopTab("FINANCIALS")}
-    >
-      FINANCIALS
-    </button>
-    <button 
-      className={`pb-2 font-semibold ${activeTopTab === "HR-PAY" ? "border-b-2 border-white" : "opacity-70 hover:opacity-100"}`}
-      onClick={() => setActiveTopTab("HR-PAY")}
-    >
-      HR-PAY
-    </button>
-    <button 
-      className={`pb-2 font-semibold ${activeTopTab === "REALTY" ? "border-b-2 border-white" : "opacity-70 hover:opacity-100"}`}
-      onClick={() => setActiveTopTab("REALTY")}
-    >
-      REALTY
-    </button>
-    <button 
-      className={`pb-2 font-semibold ${activeTopTab === "WMS" ? "border-b-2 border-white" : "opacity-70 hover:opacity-100"}`}
-      onClick={() => setActiveTopTab("WMS")}
-    >
-      WMS
-    </button>
-  </div>
-
-          {/* Financials Content */}
-          {activeTopTab === "FINANCIALS" && (
-  <div className="grid grid-cols-5 p-6 text-sm">
-    {/* Existing Financials content */}
     <div>
       <label className="block font-semibold text-gray-800 mb-2">
         Training Man Days
       </label>
-      <div className="flex gap-4">
+      <div className="flex gap-3">
         <div>
           <input
             type="number"
@@ -931,7 +1234,7 @@ const handleDeleteFile = async (file) => {
             name="training_days"
             value={client.training_days || 0}
             onChange={handleChange}
-            className="p-2 border border-gray-300 rounded text-right h-[40px] w-[60px]"
+            className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
           />
           <p className="text-sm text-gray-500 mt-1 text-center">Contract</p>
         </div>
@@ -941,7 +1244,7 @@ const handleDeleteFile = async (file) => {
             name="training_days_consumed"
             value={client.training_days_consumed || 0}
             onChange={handleChange}
-            className="p-2 border border-gray-300 rounded text-right h-[40px] w-[60px]"
+            className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
           />
           <p className="text-sm text-gray-500 mt-1 text-center">Consumed</p>
         </div>
@@ -953,7 +1256,7 @@ const handleDeleteFile = async (file) => {
               <label className="block font-semibold text-gray-800 mb-2">
                 Post-Training Man Days
               </label>
-              <div className="flex gap-4">
+              <div className="flex gap-3">
                 <div>
                   <input
                     type="number"
@@ -961,7 +1264,7 @@ const handleDeleteFile = async (file) => {
                     name="post_training_days"
                     value={client.post_training_days || 0}
                     onChange={handleChange}
-                    className="p-2 border border-gray-300 rounded text-right h-[40px] w-[60px]"
+                    className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
                   />
                   <p className="text-sm text-gray-500 mt-1 text-center">Contract</p>
                 </div>
@@ -972,20 +1275,18 @@ const handleDeleteFile = async (file) => {
                     name="post_training_days_consumed"
                     value={client.post_training_days_consumed || 0}
                     onChange={handleChange}
-                    className="p-2 border border-gray-300 rounded text-right h-[40px] w-[60px]"
+                    className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
                   />
                   <p className="text-sm text-gray-500 mt-1 text-center">Consumed</p>
                 </div>
               </div>
             </div>
 
-            {/* FS Generation & Toggles */}
-            <div className="grid grid-cols-2 gap-6 items-start">
-              <div>
+            <div>
                 <label className="block font-semibold text-gray-800 mb-2">
                   FS Generation
                 </label>
-                <div className="flex gap-4">
+                <div className="flex gap-3">
                   <div>
                     <input
                       type="number"
@@ -993,7 +1294,7 @@ const handleDeleteFile = async (file) => {
                       name="fs_generation_contract"
                       value={client.fs_generation_contract || 0}
                       onChange={handleChange}
-                      className="p-2 border border-gray-300 rounded text-right h-[40px] w-[60px]"
+                      className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
                     />
                     <p className="text-sm text-gray-500 mt-1 text-center">Contract</p>
                   </div>
@@ -1004,155 +1305,571 @@ const handleDeleteFile = async (file) => {
                       name="fs_generation_consumed"
                       value={client.fs_generation_consumed || 0}
                       onChange={handleChange}
-                      className="p-2 border border-gray-300 rounded text-right h-[40px] w-[60px]"
+                      className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
                     />
                     <p className="text-sm text-gray-500 mt-1 text-center">Consumed</p>
                   </div>
                 </div>
               </div>
 
-              <div className="flex gap-8 items-center mt-4 ml-20">
+            {/* FS Generation & Toggles */}
+            <div className="grid grid-cols-1 items-start gap-3 lg:gap-6 ">
+              
+              <div className="flex items-center mt-4 gap-3 lg:gap-6">
                 {[
-  { key: "cas", label: "CAS?" },
-  { key: "live", label: "LIVE?" },
-  { key: "with_sma", label: "WITH SMA?" },
-  { key: "fs_live", label: "FS LIVE?" },
-  { key: "active", label: "ACTIVE" },
-].map(({ key, label }) => (
-  <div key={key} className="flex flex-col items-center text-center">
-    <span className="text-gray-700 text-sm whitespace-nowrap">{label}</span>
-    <button
-      className={`w-12 h-6 flex items-center rounded-full p-1 ${
-        toggles[key] ? "bg-blue-500" : "bg-gray-300"
-      }`}
-      onClick={() => handleToggle(key)}
-    >
-      <div
-        className={`w-4 h-4 bg-white rounded-full transform transition-transform ${
-          toggles[key] ? "translate-x-6" : ""
-        }`}
-      ></div>
-    </button>
-  </div>
-))}
+                { key: "cas", label: "CAS" },
+                { key: "live", label: "LIVE" },
+                { key: "with_sma", label: "SMA" },
+                { key: "fs_live", label: "FS LIVE" },
+                { key: "active", label: "ACTIVE" },
+              ].map(({ key, label }) => (
+                <div key={key} className="flex flex-col items-center text-center">
+                  <span className="text-gray-700 text-sm whitespace-nowrap">{label}</span>
+                  <button
+                    className={`w-12 h-6 flex items-center rounded-full p-1 ${
+                      toggles[key] ? "bg-blue-500" : "bg-gray-300"
+                    }`}
+                    onClick={() => handleToggle(key)}
+                  >
+                    <div
+                      className={`w-4 h-4 bg-white rounded-full transform transition-transform ${
+                        toggles[key] ? "translate-x-6" : ""
+                      }`}
+                    ></div>
+                  </button>
+                </div>
+              ))}
+
+
+ 
+
               </div>
             </div>
-          </div>
-          )}
-        </div>
 
+          </div>
+
+                
+          )      
+          }
+
+
+    {/* HRPAY Content */}
+    {activeTopTab === "HR-PAY" && (
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 p-6 gap-4 text-sm">
+
+    
+    {/* Number of Users */}
+
+    <div>
+      <label className="block font-semibold text-gray-800 mb-2">
+        No. of Users / Employees
+      </label>
+      <div className="flex gap-3">
+        <div>
+          <input
+            type="number"
+            placeholder="Count"
+            name="cal"
+            value={client.cal || 0}
+            onChange={handleChange}
+            className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
+          />
+          <p className="text-sm text-gray-500 mt-1 text-center">Users</p>
+        </div>
+        <div>
+          <input
+            type="number"
+            name="cal"
+            value={client.cal || 0}
+            onChange={handleChange}
+            className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
+          />
+          <p className="text-sm text-gray-500 mt-1 text-center">Employees</p>
+        </div>
+      </div>
+    </div>
+
+
+    <div>
+      <label className="block font-semibold text-gray-800 mb-2">
+        Training Man Days
+      </label>
+      <div className="flex gap-3">
+        <div>
+          <input
+            type="number"
+            placeholder="15"
+            name="training_days"
+            value={client.training_days || 0}
+            onChange={handleChange}
+            className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
+          />
+          <p className="text-sm text-gray-500 mt-1 text-center">Contract</p>
+        </div>
+        <div>
+          <input
+            type="number"
+            name="training_days_consumed"
+            value={client.training_days_consumed || 0}
+            onChange={handleChange}
+            className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
+          />
+          <p className="text-sm text-gray-500 mt-1 text-center">Consumed</p>
+        </div>
+      </div>
+    </div>
+
+            {/* Post-Training Man Days */}
+            <div>
+              <label className="block font-semibold text-gray-800 mb-2">
+                Post-Training Man Days
+              </label>
+              <div className="flex gap-3">
+                <div>
+                  <input
+                    type="number"
+                    placeholder="15"
+                    name="post_training_days"
+                    value={client.post_training_days || 0}
+                    onChange={handleChange}
+                    className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
+                  />
+                  <p className="text-sm text-gray-500 mt-1 text-center">Contract</p>
+                </div>
+                <div>
+                  <input
+                    type="number"
+                    placeholder="15"
+                    name="post_training_days_consumed"
+                    value={client.post_training_days_consumed || 0}
+                    onChange={handleChange}
+                    className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
+                  />
+                  <p className="text-sm text-gray-500 mt-1 text-center">Consumed</p>
+                </div>
+              </div>
+            </div>
+
+          
+            <div className="grid grid-cols-1 items-start gap-3 lg:gap-6">
+            <div className="flex items-center mt-4 gap-3 lg:gap-6">
+              {[
+                { key: "live", label: "LIVE" },
+                { key: "with_sma", label: "SMA" },
+                { key: "active", label: "ACTIVE" },
+              ].map(({ key, label }) => (
+                <div key={key} className="flex flex-col items-center text-center">
+                  <span className="text-gray-700 text-sm whitespace-nowrap">{label}</span>
+                  <button
+                    className={`w-12 h-6 flex items-center rounded-full p-1 ${
+                      toggles[key] ? "bg-blue-500" : "bg-gray-300"
+                    }`}
+                    onClick={() => handleToggle(key)}
+                  >
+                    <div
+                      className={`w-4 h-4 bg-white rounded-full transform transition-transform ${
+                        toggles[key] ? "translate-x-6" : ""
+                      }`}
+                    ></div>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+
+          </div>
+
+                
+          )      
+          }
+
+          {/* REALTY Content */}
+    {activeTopTab === "REALTY" && (
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 p-6 gap-4 text-sm">
+
+    
+    {/* Number of Users */}
+
+    <div>
+      <label className="block font-semibold text-gray-800 mb-2">
+        No. of Users
+      </label>
+      <div className="flex gap-3">
+        <div>
+          <input
+            type="number"
+            placeholder="Count"
+            name="cal"
+            value={client.cal || 0}
+            onChange={handleChange}
+            className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
+          />
+          <p className="text-sm text-gray-500 mt-1 text-center">Count</p>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <label className="block font-semibold text-gray-800 mb-2">
+        Training Man Days
+      </label>
+      <div className="flex gap-3">
+        <div>
+          <input
+            type="number"
+            placeholder="15"
+            name="training_days"
+            value={client.training_days || 0}
+            onChange={handleChange}
+            className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
+          />
+          <p className="text-sm text-gray-500 mt-1 text-center">Contract</p>
+        </div>
+        <div>
+          <input
+            type="number"
+            name="training_days_consumed"
+            value={client.training_days_consumed || 0}
+            onChange={handleChange}
+            className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
+          />
+          <p className="text-sm text-gray-500 mt-1 text-center">Consumed</p>
+        </div>
+      </div>
+    </div>
+
+            {/* Post-Training Man Days */}
+            <div>
+              <label className="block font-semibold text-gray-800 mb-2">
+                Post-Training Man Days
+              </label>
+              <div className="flex gap-3">
+                <div>
+                  <input
+                    type="number"
+                    placeholder="15"
+                    name="post_training_days"
+                    value={client.post_training_days || 0}
+                    onChange={handleChange}
+                    className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
+                  />
+                  <p className="text-sm text-gray-500 mt-1 text-center">Contract</p>
+                </div>
+                <div>
+                  <input
+                    type="number"
+                    placeholder="15"
+                    name="post_training_days_consumed"
+                    value={client.post_training_days_consumed || 0}
+                    onChange={handleChange}
+                    className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
+                  />
+                  <p className="text-sm text-gray-500 mt-1 text-center">Consumed</p>
+                </div>
+              </div>
+            </div>
+
+          
+            <div className="grid grid-cols-1 items-start gap-3 lg:gap-6">
+            <div className="flex items-center mt-4 gap-3 lg:gap-6">
+              {[
+                { key: "live", label: "LIVE" },
+                { key: "with_sma", label: "SMA" },
+                { key: "active", label: "ACTIVE" },
+              ].map(({ key, label }) => (
+                <div key={key} className="flex flex-col items-center text-center">
+                  <span className="text-gray-700 text-sm whitespace-nowrap">{label}</span>
+                  <button
+                    className={`w-12 h-6 flex items-center rounded-full p-1 ${
+                      toggles[key] ? "bg-blue-500" : "bg-gray-300"
+                    }`}
+                    onClick={() => handleToggle(key)}
+                  >
+                    <div
+                      className={`w-4 h-4 bg-white rounded-full transform transition-transform ${
+                        toggles[key] ? "translate-x-6" : ""
+                      }`}
+                    ></div>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+
+          </div>
+
+                
+          )      
+          }
+
+          {/* WMS Content */}
+    {activeTopTab === "WMS" && (
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 p-6 gap-4 text-sm">
+
+    
+    {/* Number of Users */}
+
+    <div>
+      <label className="block font-semibold text-gray-800 mb-2">
+        No. of Users
+      </label>
+      <div className="flex gap-3">
+        <div>
+          <input
+            type="number"
+            placeholder="Count"
+            name="cal"
+            value={client.cal || 0}
+            onChange={handleChange}
+            className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
+          />
+          <p className="text-sm text-gray-500 mt-1 text-center">Count</p>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <label className="block font-semibold text-gray-800 mb-2">
+        Training Man Days
+      </label>
+      <div className="flex gap-3">
+        <div>
+          <input
+            type="number"
+            placeholder="15"
+            name="training_days"
+            value={client.training_days || 0}
+            onChange={handleChange}
+            className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
+          />
+          <p className="text-sm text-gray-500 mt-1 text-center">Contract</p>
+        </div>
+        <div>
+          <input
+            type="number"
+            name="training_days_consumed"
+            value={client.training_days_consumed || 0}
+            onChange={handleChange}
+            className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
+          />
+          <p className="text-sm text-gray-500 mt-1 text-center">Consumed</p>
+        </div>
+      </div>
+    </div>
+
+            {/* Post-Training Man Days */}
+            <div>
+              <label className="block font-semibold text-gray-800 mb-2">
+                Post-Training Man Days
+              </label>
+              <div className="flex gap-3">
+                <div>
+                  <input
+                    type="number"
+                    placeholder="15"
+                    name="post_training_days"
+                    value={client.post_training_days || 0}
+                    onChange={handleChange}
+                    className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
+                  />
+                  <p className="text-sm text-gray-500 mt-1 text-center">Contract</p>
+                </div>
+                <div>
+                  <input
+                    type="number"
+                    placeholder="15"
+                    name="post_training_days_consumed"
+                    value={client.post_training_days_consumed || 0}
+                    onChange={handleChange}
+                    className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
+                  />
+                  <p className="text-sm text-gray-500 mt-1 text-center">Consumed</p>
+                </div>
+              </div>
+            </div>
+
+          
+            <div className="grid grid-cols-1 items-start gap-3 lg:gap-6">
+            <div className="flex items-center mt-4 gap-3 lg:gap-6">
+              {[
+                { key: "live", label: "LIVE" },
+                { key: "with_sma", label: "SMA" },
+                { key: "active", label: "ACTIVE" },
+              ].map(({ key, label }) => (
+                <div key={key} className="flex flex-col items-center text-center">
+                  <span className="text-gray-700 text-sm whitespace-nowrap">{label}</span>
+                  <button
+                    className={`w-12 h-6 flex items-center rounded-full p-1 ${
+                      toggles[key] ? "bg-blue-500" : "bg-gray-300"
+                    }`}
+                    onClick={() => handleToggle(key)}
+                  >
+                    <div
+                      className={`w-4 h-4 bg-white rounded-full transform transition-transform ${
+                        toggles[key] ? "translate-x-6" : ""
+                      }`}
+                    ></div>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+
+          </div>
+
+                
+          )      
+          }
 
         {/* Modules Section */}
-        <div className="mb-6 ml-5">
-          <div className="grid grid-cols-3 gap-4 items-start text-sm">
-            {/* Main Modules */}
-            <div>
-              <h3 className="text-gray-800 font-semibold mb-2">Modules / Services</h3>
-              <div className="space-y-2">
-              {modules.map((module) => (
-        <label key={module} className="flex items-center space-x-2">
-          <input
-            type="checkbox"
-            checked={selectedModules.includes(module)}
-            onChange={() => {
-              const newModules = selectedModules.includes(module)
-                ? selectedModules.filter(m => m !== module)
-                : [...selectedModules, module];
-              setSelectedModules(newModules);
-              setPendingChanges(prev => ({ ...prev, modules: newModules }));
-            }}
-            className="form-checkbox h-4 w-4 text-blue-600"
-          />
-          <span className="text-gray-700">{module}</span>
-        </label>
-      ))}
-              </div>
-            </div>
-
-            {/* Other Modules */}
-            <div>
-              <h3 className="text-gray-800 font-semibold mb-2">Other Modules</h3>
-              <div className="space-y-2">
-              {otherModules.map((module) => (
-        <label key={module} className="flex items-center space-x-2">
-          <input
-            type="checkbox"
-            checked={selectedModules.includes(module)}
-            onChange={() => {
-              const newModules = selectedModules.includes(module)
-                ? selectedModules.filter(m => m !== module)
-                : [...selectedModules, module];
-              setSelectedModules(newModules);
-              setPendingChanges(prev => ({ ...prev, modules: newModules }));
-            }}
-            className="form-checkbox h-4 w-4 text-blue-600"
-          />
-          <span className="text-gray-700">{module}</span>
-        </label>
-      ))}
-              </div>
-            </div>
-
-            {/* Technicians Assigned */}
-            <div className="mb-4">
-  <label className="block text-gray-700 mb-2">Technical Assigned</label>
-  {technicianInputs.map((tech, index) => {
-    // Extract just the name part (before parenthesis) for the select value
-    const techValue = tech.includes('(') ? tech.split(' (')[0] : tech;
+<div className="mb-6 px-4">
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 items-start text-sm">
     
-    return (
-      <div key={index} className="flex items-center gap-2 mb-2">
-        <select
-          value={techValue}
-          onChange={(e) => {
-            const selectedName = e.target.value;
-            const selectedCode = technicianCodeMap[selectedName];
-            const displayValue = `${selectedName} (${selectedCode})`;
-            
-            const newInputs = [...technicianInputs];
-            newInputs[index] = displayValue;
-            setTechnicianInputs(newInputs);
-            setSelectedTechnicians(newInputs.filter(t => t && t !== ""));
-          }}
-          className="p-2 border border-gray-300 rounded flex-1 text-sm"
-        >
-          <option value="">Select Technician</option>
-          {technicians.map((name) => (
-            <option 
-              key={name}
-              value={name}
-              disabled={selectedTechnicians.some(t => t.startsWith(`${name} (`)) && !tech.startsWith(`${name} (`)}
-            >
-              {name} ({technicianCodeMap[name]})
-            </option>
-          ))}
-        </select>
-        {index === technicianInputs.length - 1 ? (
-          <button
-            type="button"
-            onClick={addTechnicianInput}
-            className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600 w-10 h-10 flex items-center justify-center"
-          >
-            <FaPlus />
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={() => removeTechnicianInput(index)}
-            className="bg-red-500 text-white p-2 rounded hover:bg-red-600 w-10 h-10 flex items-center justify-center"
-          >
-            ×
-          </button>
-        )}
+    {/* Main Modules */}
+    <div>
+      <h3 className="text-gray-800 font-semibold mb-2">Modules / Services</h3>
+      <div className="space-y-2">
+        {currentMainModules.map((module) => (
+          <label key={module} className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={currentSelectedModules.includes(module)}
+              onChange={() => handleModuleToggle(module)}
+              className="form-checkbox h-4 w-4 text-blue-600"
+            />
+            <span className="text-gray-700">{module}</span>
+          </label>
+        ))}
       </div>
-    );
-  })}
-</div>
+    </div>
+
+    {/* Other Modules */}
+    <div>
+      <h3 className="text-gray-800 font-semibold mb-2">Other Modules</h3>
+      <div className="space-y-2">
+        {currentOtherModules.map((module) => {
+          const isChecked = currentSelectedModules.includes(module);
+          const toggleModule = () => {
+            const newModules = isChecked
+              ? currentSelectedModules.filter(m => m !== module)
+              : [...currentSelectedModules, module];
+            setTabModules(prev => ({
+              ...prev,
+              [activeTopTab]: newModules
+            }));
+            setPendingChanges(prev => ({ ...prev, modules: newModules }));
+          };
+
+          return (
+            <label key={module} className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={isChecked}
+                onChange={toggleModule}
+                className="form-checkbox h-4 w-4 bg-blue-500"
+              />
+              <span className="text-gray-700">{module}</span>
+            </label>
+          );
+        })}
+      </div>
+    </div>
+
+    {/* Technicians Assigned */}
+    <div className="pr-4">
+      <label className="block text-gray-700 mb-2">Technical Assigned</label>
+      {technicianInputs.map((tech, index) => {
+        const techValue = tech.includes(" (") ? tech.split(" (")[0] : tech;
+        return (
+          <div key={index} className="flex items-center gap-2 mb-2">
+            <select
+              value={techValue}
+              onChange={(e) => handleTechnicianChange(index, e.target.value)}
+              className="p-2 border border-gray-300 rounded flex-1 text-sm w-full"
+            >
+              <option value="">Select Technician</option>
+              {technicians.map((name) => (
+                <option
+                  key={name}
+                  value={name}
+                  disabled={technicianInputs.some(t => t.startsWith(`${name} (`)) && !tech.startsWith(`${name} (`)}
+                >
+                  {name} ({technicianCodeMap[name]})
+                </option>
+              ))}
+            </select>
+            {index === technicianInputs.length - 1 ? (
+              <button
+                type="button"
+                onClick={addTechnicianInput}
+                className="bg-blue-600 text-white p-2 rounded hover:bg-blue-700 w-9 h-9 flex items-center justify-center"
+              >
+                <FaPlus />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => removeTechnicianInput(index)}
+                className="bg-red-600 text-white p-2 rounded hover:bg-red-700 w-9 h-9 flex items-center justify-center"
+              >
+                <FaMinus />
+              </button>
+            )}
           </div>
+        );
+      })}
+    </div>
+  </div>
+
+  {/* Save Button */}
+  <div className="flex justify-center py-4">
+    <button
+      className="bg-blue-600 text-white font-semibold px-28 py-2 rounded-lg shadow-md hover:bg-blue-800 transition duration-300"
+      onClick={handleSave}
+      disabled={isSaving}
+    >
+      {isSaving ? (
+        <>
+          <svg
+            className="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            ></circle>
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            ></path>
+          </svg>
+          {isViewMode ? "Updating..." : "Saving..."}
+        </>
+      ) : isViewMode ? "Update" : "Save"}
+    </button>
+  </div>
+</div>
+
+
         </div>
 
+
+
+
+
+
         {/* Bottom Tabs */}
-        <div className="flex space-x-4 bg-blue-500 gap-[200px] text-white rounded-t-md p-4">
+        <div className="flex flex-wrap justify-center mb-5 sm:justify-start gap-4 text-sm sm:gap-10 bg-blue-600 text-white rounded-t-md p-3 lg:gap-[150px] lg:text-base">
           {["Contact Information", "Server Information", "Attachment", "SMA Information"].map((tab) => (
             <button
               key={tab}
@@ -1197,6 +1914,8 @@ const handleDeleteFile = async (file) => {
         )}
 
         {activeTab === "Server Information" && (
+  <>
+  {/* 4-column grid for Anydesk + Server Passwords */}
   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 mt-6">
     {/* Anydesk ID */}
     <div>
@@ -1214,54 +1933,84 @@ const handleDeleteFile = async (file) => {
     </div>
 
     {/* Anydesk Password */}
-      <div className="relative">
-        <label className="block font-medium text-gray-700 mb-2">
-          Server's Anydesk Password
-        </label>
-        <input
-          type={showRemotePw ? "text" : "password"} // Toggle between text and password
-          name="remote_pw"
-          placeholder="P@ssw0rd123"
-          value={client.remote_pw || ""}
-          onChange={handleChange}
-          className="p-2 border border-gray-300 rounded w-full pr-10"
-        />
-        <div
-          className="absolute top-[70%] right-3 transform -translate-y-1/2 cursor-pointer text-gray-500"
-          onClick={() => setShowRemotePw(!showRemotePw)} // Toggle visibility
-        >
-          {showRemotePw ? <EyeOff size={20} /> : <Eye size={20} />}
-        </div>
+    <div className="relative">
+      <label className="block font-medium text-gray-700 mb-2">
+        Server's Anydesk Password
+      </label>
+      <input
+        type={showRemotePw ? "text" : "password"}
+        name="remote_pw"
+        placeholder="P@ssw0rd123"
+        value={client.remote_pw || ""}
+        onChange={handleChange}
+        className="p-2 border border-gray-300 rounded w-full pr-10"
+      />
+      <div
+        className="absolute top-[70%] right-3 transform -translate-y-1/2 cursor-pointer text-gray-500"
+        onClick={() => setShowRemotePw(!showRemotePw)}
+      >
+        {showRemotePw ? <EyeOff size={20} /> : <Eye size={20} />}
       </div>
+    </div>
 
-      {/* Server Password */}
-      <div className="relative">
-        <label className="block font-medium text-gray-700 mb-2">
-          Server's Password
-        </label>
-        <input
-          type={showServerPw ? "text" : "password"} // Toggle between text and password
-          name="server_pw"
-          placeholder="Password2023"
-          value={client.server_pw || ""}
-          onChange={handleChange}
-          className="p-2 border border-gray-300 rounded w-full pr-10"
-        />
-        <div
-          className="absolute top-[70%] right-3 transform -translate-y-1/2 cursor-pointer text-gray-500"
-          onClick={() => setShowServerPw(!showServerPw)} // Toggle visibility
-        >
-          {showServerPw ? <EyeOff size={20} /> : <Eye size={20} />}
+    {/* Server Password */}
+    <div className="relative">
+      <label className="block font-medium text-gray-700 mb-2">
+        Server's Password
+      </label>
+      <input
+        type={showServerPw ? "text" : "password"}
+        name="server_pw"
+        placeholder="Password2023"
+        value={client.server_pw || ""}
+        onChange={handleChange}
+        className="p-2 border border-gray-300 rounded w-full pr-10"
+      />
+      <div
+        className="absolute top-[70%] right-3 transform -translate-y-1/2 cursor-pointer text-gray-500"
+        onClick={() => setShowServerPw(!showServerPw)}
+      >
+        {showServerPw ? <EyeOff size={20} /> : <Eye size={20} />}
       </div>
     </div>
   </div>
+
+  {/* Help Desk on separate row */}
+  <div className="mb-6">
+
+    <label className="block font-medium text-gray-700 mb-2">
+      Help Desk URL 
+      {client.helpdesk && (
+      <a
+        href={client.helpdesk.startsWith('http') ? client.helpdesk : `https://${client.helpdesk}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-blue-600 hover:underline mt-2 inline-block font-bold px-2"
+      >
+         (Go to Help Desk)
+      </a>
+    )}
+    </label>
+
+    <input
+      type="text"
+      name="helpdesk"
+      placeholder="URL"
+      value={client.helpdesk || ""}
+      onChange={handleChange}
+      className="p-2 border border-gray-300 rounded w-full text-sm"
+    />
+    
+  </div>
+</>
+
 )}
 
 
         {/* Attachment Tab */}
         {activeTab === "Attachment" && (
           <div>
-            <div className="flex space-x-4 bg-blue-500 gap-[200px] text-white rounded-t-md p-4 mt-10">
+            <div className="flex flex-wrap justify-center sm:justify-start gap-4 text-sm sm:gap-10 bg-blue-600 text-white rounded-t-md p-3 lg:gap-[150px] lg:text-base">
               {["Client Service Form", "Turn-Over Documents"].map((tab) => (
                 <button
                   key={tab}
@@ -1278,38 +2027,37 @@ const handleDeleteFile = async (file) => {
             </div>
 
             {selectedAttachmentType && (
-              <div className="p-6 bg-gray-100 rounded-b-md">
-                {selectedAttachmentType === "Client Service Form" && (
-                  <div>
-                    <div 
-                      className="flex items-center space-x-2 mb-4 mt-2" 
-                      onClick={() => handleAddFileClick('clientService')}
-                    >
-                      <FaPlus className="text-blue-500 cursor-pointer" />
-                      <span className="font-semibold text-gray-700 cursor-pointer">Add New File</span>
-                    </div>
+              <div className="bg-blue-50 rounded-b-md">
+  <div className="p-2 text-right cursor-pointer" onClick={() => handleAddFileClick('clientService')}>
+    <span className="inline-flex items-center space-x-2">
+      <FaPlus className="text-blue-500" />
+      <span className="font-semibold text-gray-700">Add New File</span>
+    </span>
+  </div>
 
-                    <table className="min-w-full bg-white border border-gray-300">
-                    <thead>
-  <tr className="border-b bg-blue-300">
-    <th className="p-2 text-left">File Name</th>
-    <th className="p-2 text-left">Upload Date</th>
-    <th className="p-2 text-left">Signed Date</th>
-    <th className="p-2 text-left">Actions</th>
-  </tr>
-</thead>
-                      <tbody>
-  {clientServiceFiles.map((file) => (
-  <tr key={file.file_id} className="border-b">
-                                <td className="p-2">{file.original_name}</td>
-                            <td className="p-2">
-                              {file.upload_date ? new Date(file.upload_date).toLocaleDateString() : 'N/A'}
-                            </td>
-                            <td className="p-2">
-        {file.signed_date ? new Date(file.signed_date).toLocaleDateString() : 'N/A'}
-      </td>
-                            <td className="p-2 flex space-x-2">
-                              <button
+  {/* ✅ Scrollable wrapper for mobile */}
+  <div className="overflow-x-auto">
+    <table className="min-w-full bg-white border border-gray-300 text-sm">
+      <thead>
+        <tr className="border-b bg-blue-300">
+          <th className="p-2 text-left whitespace-nowrap">File Name</th>
+          <th className="p-2 text-left whitespace-nowrap">Upload Date</th>
+          <th className="p-2 text-left whitespace-nowrap">Signed Date</th>
+          <th className="p-2 text-right px-10 whitespace-nowrap">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {clientServiceFiles.map((file) => (
+          <tr key={file.file_id} className="border-b">
+            <td className="p-2 whitespace-nowrap">{file.original_name}</td>
+            <td className="p-2 whitespace-nowrap">
+              {file.upload_date ? new Date(file.upload_date).toLocaleDateString() : 'N/A'}
+            </td>
+            <td className="p-2 whitespace-nowrap">
+              {file.signed_date ? new Date(file.signed_date).toLocaleDateString() : 'N/A'}
+            </td>
+            <td className="p-2 flex space-x-2 justify-end whitespace-nowrap">
+              <button
                 onClick={() => handleViewFile(file)}
                 className="p-2 text-blue-500 hover:text-blue-700"
                 title="View"
@@ -1330,73 +2078,14 @@ const handleDeleteFile = async (file) => {
               >
                 <FaTrash />
               </button>
-                            </td>
-                          </tr>
-))}
-</tbody>
-                    </table>
-                  </div>
-                )}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</div>
 
-                {selectedAttachmentType === "Turn-Over Documents" && (
-                  <div>
-                    <div 
-                      className="flex items-center space-x-2 mb-8 mt-4" 
-                      onClick={() => handleAddFileClick('turnOver')}
-                    >
-                      <FaPlus className="text-blue-500 cursor-pointer" />
-                      <span className="font-semibold text-gray-700 cursor-pointer">Add New File</span>
-                    </div>
-
-                    <table className="min-w-full bg-white border border-gray-300">
-                      <thead>
-                        <tr className="border-b bg-blue-300">
-                          <th className="p-2 text-left">File Name</th>
-                          <th className="p-2 text-left">Upload Date</th>
-                          <th className="p-2 text-left">Signed Date</th>
-                          <th className="p-2 text-left">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {turnOverFiles.map((file) => (
-                          <tr key={file.file_id} className="border-b">
-                            <td className="p-2">{file.original_name}</td>
-                            <td className="p-2">
-                              {file.upload_date ? new Date(file.upload_date).toLocaleDateString() : 'N/A'}
-                            </td>
-                            <td className="p-2">
-        {file.signed_date ? new Date(file.signed_date).toLocaleDateString() : 'N/A'}
-      </td>
-                            <td className="p-2 flex space-x-2">
-                              <button
-                onClick={() => handleViewFile(file)}
-                className="p-2 text-blue-500 hover:text-blue-700"
-                title="View"
-              >
-                <FaEye />
-              </button>
-              <button
-                onClick={() => handleDownloadFile(file)}
-                className="p-2 text-green-500 hover:text-green-700"
-                title="Download"
-              >
-                <FaDownload />
-              </button>
-              <button
-                onClick={() => handleDeleteFile(file)}
-                className="p-2 text-red-500 hover:text-red-700"
-                title="Delete"
-              >
-                <FaTrash />
-              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
             )}
           </div>
         )}
@@ -1404,15 +2093,21 @@ const handleDeleteFile = async (file) => {
         {/* SMA Information Tab */}
         {activeTab === "SMA Information" && (
           <div>
-            <div 
+            {/* <div 
               className="flex items-center space-x-2 mb-8 mt-4" 
               onClick={() => handleAddFileClick('smaInformation')}
             >
               <FaPlus className="text-blue-500 cursor-pointer" />
               <span className="font-semibold text-gray-700 cursor-pointer">Add New File</span>
+            </div> */}
+            <div className="p-2 text-right cursor-pointer" onClick={() => handleAddFileClick('smaInformation')}>
+              <span className="inline-flex items-center space-x-2">
+                <FaPlus className="text-blue-500" />
+                <span className="font-semibold text-gray-700">Add New File</span>
+              </span>
             </div>
 
-            <table className="min-w-full bg-white border border-gray-300">
+            <table className="min-w-full bg-white border border-gray-300 text-sm">
               <thead>
                 <tr className="border-b bg-blue-300">
                  <th className="p-2 text-left">File Name</th>
@@ -1441,7 +2136,7 @@ const handleDeleteFile = async (file) => {
                         className="border border-gray-300 p-1"
                       />
                     </td>
-                    <td className="p-2 flex space-x-2">
+                    <td className="p-2 flex space-x-2 text-center">
                       <button
                 onClick={() => handleViewFile(file)}
                 className="p-2 text-blue-500 hover:text-blue-700"
@@ -1474,7 +2169,7 @@ const handleDeleteFile = async (file) => {
         {/* Save Button */}
         <div className="flex justify-center mt-6">
         <button
-  className="bg-blue-600 text-white font-semibold px-8 py-3 rounded-lg shadow-md hover:bg-blue-800 transition duration-300"
+  className="bg-blue-600 text-white font-semibold px-28 py-2 rounded-lg shadow-md hover:bg-blue-800 transition duration-300"
   onClick={handleSave}
   disabled={isSaving}
 >

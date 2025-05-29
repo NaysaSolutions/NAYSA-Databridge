@@ -4,6 +4,8 @@ import { faBell, faUser, faSignOutAlt } from "@fortawesome/free-solid-svg-icons"
 import { useAuth } from "../Authentication/AuthContext";
 import { useNavigate } from "react-router-dom";
 import ClientLookupModal from "./ClientLookupModal"; // Import the new modal component
+import { GetAPI  } from "../api";
+// import Sidebar from "./Sidebar";
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
@@ -13,23 +15,45 @@ const Dashboard = () => {
   const [allClients, setAllClients] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+// const [isOpen, setIsOpen] = useState(true);
+// const [isMobileOpen, setIsMobileOpen] = useState(false);
+
   useEffect(() => {
     if (user?.id) {
       fetchClients();
     }
   }, [user]);
 
+  // const fetchClients = async () => {
+  //   try {
+  //     const response = await fetch("http://127.0.0.1:8000/api/getClients", {
+  //       headers: { Accept: "application/json" },
+  //     });
+
+  //     if (!response.ok) {
+  //       throw new Error(`HTTP error! Status: ${response.status}`);
+  //     }
+
+  //     const data = await response.json();
+  //     const filteredClients = data.filter(
+  //       (client) => String(client.tech_assigned).trim() === String(user.userId).trim()
+  //     );
+
+  //     setClients(filteredClients.slice(0, 10));
+  //     setAllClients(filteredClients);
+  //   } catch (error) {
+  //     console.error("Error fetching clients:", error);
+  //   }
+  // };
+
   const fetchClients = async () => {
     try {
-      const response = await fetch("http://192.168.56.1:82/api/getClients", {
-        headers: { Accept: "application/json" },
+      const response = await GetAPI("getClients", {}, {
+        Accept: "application/json",
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
+      const data = response.data;
 
-      const data = await response.json();
       const filteredClients = data.filter(
         (client) => String(client.tech_assigned).trim() === String(user.userId).trim()
       );
@@ -48,7 +72,21 @@ const Dashboard = () => {
 
 
   return (
-    <div className="flex h-screen font-poppins">
+    // <div className="flex h-screen font-poppins">
+
+<div className="flex h-screen font-poppins">
+
+      {/* <Sidebar
+        isOpen={isOpen}
+        setIsOpen={setIsOpen}
+        isMobileOpen={isMobileOpen}
+        setIsMobileOpen={setIsMobileOpen}
+        currentSection="dashboard"
+        onAddClient={() => {}}
+        closeAddClientForm={() => {}}
+        showAddClientForm={false}
+      /> */}
+
       <main className="flex-1 p-4 bg-blue-50">
         <div className="relative flex-1 p-2 bg-blue-50">
           {/* Top Right Icons */}
@@ -80,7 +118,7 @@ const Dashboard = () => {
           </div>
 
           {/* Welcome Message */}
-          <h2 className="text-3xl font-bold mt-12">Welcome, {user ? user.username : "Guest"}!</h2>
+          <h2 className="text-3xl font-bold mt-10 mb-4">Welcome, {user ? user.username : "Guest"}!</h2>
         </div>
 
         {/* My Clients Section */}
@@ -90,7 +128,7 @@ const Dashboard = () => {
             <p className="text-gray-500">Loading clients...</p>
           ) : (
             <>
-              <ul className="space-y-2 text-md">
+              <ul className="space-y-2 text-md text-sm">
                 {clients.map((client, index) => (
                   <li key={index} className="text-gray-900">{client.client_name}</li>
                 ))}

@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { useAuth } from "../Authentication/AuthContext"; 
+import { PostAPI } from "../api";
 
 function Login() {
     const { setUser } = useAuth(); // Get setUser from AuthContext
@@ -21,7 +22,7 @@ const handleSubmit = async (e) => {
     setLoading(true);
   
     try {
-      const response = await axios.post("http://192.168.56.1:82/api/loginDB", formData);
+      const response = await PostAPI("loginDB", formData);
   
       if (response.data.status === "success") {
         const userData = response.data.user;
