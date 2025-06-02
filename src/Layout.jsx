@@ -26,7 +26,7 @@ const Layout = ({ children }) => {
 
       {/* Main Content */}
       <div
-        className={`transition-all duration-300 p-2 bg-blue-50 font-poppins min-h-screen w-full ${
+        className={`transition-all duration-300 p-2 font-poppins min-h-screen w-full ${
           isSidebarOpen ? 'ml-64' : 'ml-20'
         }`}
       >

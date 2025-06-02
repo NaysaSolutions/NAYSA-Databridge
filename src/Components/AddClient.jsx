@@ -26,7 +26,23 @@ const AddClientForm = () => {
   const [showRemotePw, setShowRemotePw] = useState(false);
   const [showServerPw, setShowServerPw] = useState(false);
 
+const [isEditingHelpdesk, setIsEditingHelpdesk] = useState(false);
 
+const toggleFields = [
+  { label: "CAS", key: "cas" },
+  { label: "Live", key: "live" },
+  { label: "SMA", key: "with_sma" },
+  { label: "FS Live", key: "fs_live" },
+  { label: "Active", key: "active" }
+];
+
+const toggleVisibilityMap = {
+  "FINANCIALS": ["cas", "live", "with_sma", "fs_live", "active"],
+  "HR-PAY": ["live", "with_sma", "active"],
+  "REALTY": ["live", "with_sma", "active"],
+  "WMS": ["live", "with_sma", "active"],
+  // add other tabs as needed
+};
 
 
   // Initialize all state at the top
@@ -245,8 +261,10 @@ const initialToggleStatePerTab = {
 };
 
 const [toggles, setToggles] = useState({
-  financials: { ...initialToggleStatePerTab },
-  hr: { ...initialToggleStatePerTab },
+  "FINANCIALS": { ...initialToggleStatePerTab },
+  "HR-PAY": { ...initialToggleStatePerTab },
+  "REALTY": { ...initialToggleStatePerTab },
+  "WMS": { ...initialToggleStatePerTab },
   // add other tabs as needed
 });
 
@@ -300,6 +318,12 @@ const [toggles, setToggles] = useState({
   }
 }, [clientcontracts]);
 
+// inside your component:
+useEffect(() => {
+  if (activeTab === "Attachment") {
+    setSelectedAttachmentType("Client Service Form");
+  }
+}, [activeTab]);
 
 useEffect(() => {
   if (location.state) {
@@ -451,17 +475,40 @@ useEffect(() => {
             ? [data.client_contract]
             : [];
 
+
+        const formatDate = (date) => {
+        const d = new Date(date);
+        const year = d.getFullYear();
+        const month = (`0${d.getMonth() + 1}`).slice(-2);
+        const day = (`0${d.getDate()}`).slice(-2);
+        return `${year}-${month}-${day}`;
+      };
+
         // ✅ Filter by current app type// After filtering contracts by activeTopTab
         const contractsForAppType = contracts.filter(c => c.app_type === activeTopTab);
         const contractForAppType = contractsForAppType.length > 0 ? contractsForAppType[0] : {};
 
+        // Format dates before setting
+        const formattedContractForAppType = contractForAppType
+          ? {
+              ...contractForAppType,
+              contract_date: formatDate(contractForAppType.contract_date),
+              sma_date: formatDate(contractForAppType.sma_date),
+            }
+          : {};
+
         // Set clientcontracts as a single object, not an array
-        setClientContracts(contractForAppType);
+        // setClientContracts(contractForAppType);
+        setClientContracts(formattedContractForAppType);
       //   setClientContracts(prev => ({
       //   ...prev,
       //   [activeTopTab]: contractForAppType
       // }));
 
+        // const formatDate = (dateStr) => {
+        //   if (!dateStr) return '';
+        //   return new Date(dateStr).toISOString().split('T')[0];
+        // };
 
 
         const transformedClient = {
@@ -485,7 +532,9 @@ useEffect(() => {
             fs_generation_consumed: Number(c.fs_generation_consumed) || 0,
             numberOfUsers: c.numberOfUsers || 0,
             numberOfEmployees: c.numberOfEmployees || 0,
-            contract_date: c.contract_date || '',
+            // contract_date: c.contract_date || '',
+            contract_date: formatDate(c.contract_date || ''),
+            sma_date: formatDate(c.sma_date || ''),
             cas: c.cas || 'N',
             live: c.live || 'N',
             with_sma: c.with_sma || 'N',
@@ -632,6 +681,7 @@ const handleToggle = (key) => {
       numberOfUsers: 0,
       numberOfEmployees: 0,
       contract_date: '',
+      sma_date: '',
       sma_days: 0
     };
 
@@ -959,6 +1009,7 @@ const handleChange = (e) => {
     'numberOfUsers',
     'numberOfEmployees',
     'contract_date',
+    'sma_date',
     'cas',
     'live',
     'with_sma',
@@ -1107,6 +1158,15 @@ const syncTogglesToContracts = () => {
 //   fs_live: toggles.fs_live ? "Y" : "N",
 //   active: toggles.active ? "Y" : "N"
 // };
+
+const formatDate = (date) => {
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = (`0${d.getMonth() + 1}`).slice(-2);
+  const day = (`0${d.getDate()}`).slice(-2);
+  return `${year}-${month}-${day}`;
+};
+
 const togglesToContract = mapTogglesToYN(toggles[activeTopTab] || {});
 
 const clientContractPayload = [{
@@ -1119,7 +1179,9 @@ const clientContractPayload = [{
   fs_generation_consumed: Number(clientcontracts.fs_generation_consumed) || 0,
   numberOfUsers: Number(clientcontracts.numberOfUsers) || 0,
   numberOfEmployees: Number(clientcontracts.numberOfEmployees) || 0,
-  contract_date: clientcontracts.contract_date || '',
+  // contract_date: clientcontracts.contract_date || '',
+  contract_date: formatDate(clientcontracts.contract_date || ''),
+  sma_date: formatDate(clientcontracts.sma_date || ''),
   cas: togglesToContract.cas,
   live: togglesToContract.live,
   with_sma: togglesToContract.with_sma,
@@ -1231,7 +1293,7 @@ const clientContractPayload = [{
 };
 
   return (
-    <div className="p-4 bg-blue-50 min-h-screen">
+    <div className="p-4 bg-white min-h-screen">
 
       {/* Loading Overlay */}
       {isLoading && (
@@ -1365,734 +1427,797 @@ const clientContractPayload = [{
           />
         </div>
 
-        {/* Number of Users */}
-        {/* <div className="grid grid-cols-6 items-center gap-4 mb-4 text-sm">
-          <div className="col-span-2">
-            <label htmlFor="cal" className="block font-bold text-gray-800 mb-2 text-sm">
-              Number of Users
-            </label>
-            <input
-              id="cal"
-              type="text"
-              name="cal"
-              value={client.cal || ""}
-              onChange={handleChange}
-              className="mt-1 p-2 border border-gray-300 rounded-lg w-full"
-            />
-          </div>
-        </div> */}
-
 {/* APPLICATION TABS */}
-<div className="mt-6 bg-blue-50 text-sm lg:text-base">
-  <div className="flex flex-wrap justify-center sm:justify-start gap-4 sm:gap-10 bg-blue-600 text-white rounded-t-md p-3 lg:gap-[220px]">
-  {["FINANCIALS", "HR-PAY", "REALTY", "WMS"].map(tab => (
-    <button 
-      key={tab}
-      className={`pb-2 font-semibold ${
-        activeTopTab === tab ? "border-b-2 border-white" : "opacity-70 hover:opacity-100"
-      }`}
-      onClick={() => setActiveTopTab(tab)}
-    >
-      {tab}
-    </button>
-  ))}
-</div>
+<div className="mt-6 text-sm lg:text-base bg-blue-100">
+  <div className="grid grid-cols-2 sm:flex sm:justify-between bg-blue-600 text-white rounded-t-xl px-4 py-2 gap-2">
+    {["FINANCIALS", "HR-PAY", "REALTY", "WMS"].map((tab) => (
+      <button
+        key={tab}
+        onClick={() => setActiveTopTab(tab)}
+        className={`w-full text-center px-4 py-2 font-semibold rounded-t-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white
+          ${
+            activeTopTab === tab
+              ? "bg-white text-blue-600 shadow-md"
+              : "opacity-80 hover:opacity-100"
+          }`}
+      >
+        {tab}
+      </button>
+    ))}
+  </div>
 
 
   {/* Financials Content */}
   {activeTopTab === "FINANCIALS" && (
-  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 p-6 gap-2 text-sm">
+  <div className="p-4 space-y-6">
 
-    
-    {/* Number of Users */}
+  {/* Contract Details + Toggles in One Row */}
+  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-    {/* <div>
-      <label className="block font-semibold text-gray-800 mb-2">
-        No. of Users
-      </label>
-      
-      <div className="flex gap-2">
+    {/* Contract Section */}
+    <div className="bg-white rounded-xl shadow p-4 border">
+      <h2 className="text-lg font-semibold text-blue-800 mb-4">Contract Details</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
-          <input
-            type="number"
-            placeholder="Count"
-            name="numberOfUsers"
-            value={clientcontracts.numberOfUsers ?? ''}
-            onChange={handleChange}
-            className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
-          />
-          <p className="text-sm text-gray-500 mt-1 text-center">Count</p>
-        </div>
-      </div>
-    </div> */}
-
-    <div>
-      <label className="block font-semibold text-gray-800 mb-2">
-        Contract Details
-      </label>
-      <div className="flex gap-2">
-        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Signed Contract Date</label>
           <input
             type="date"
-            placeholder="15"
             name="contract_date"
             value={clientcontracts.contract_date ?? ''}
             onChange={handleChange}
-            className="p-2 border border-gray-300 rounded text-left h-[40px] w-[130px]"
+            className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
           />
-          <p className="text-sm text-gray-500 mt-1 text-center">Contract Date</p>
         </div>
         <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">SMA Renewal Date</label>
+          <input
+            type="date"
+            name="sma_date"
+            value={clientcontracts.sma_date ?? ''}
+            onChange={handleChange}
+            className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">No. of Users</label>
           <input
             type="number"
-            placeholder="Users Cal"
             name="numberOfUsers"
             value={clientcontracts.numberOfUsers ?? ''}
             onChange={handleChange}
-            className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
+            className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
           />
-          <p className="text-sm text-gray-500 mt-1 text-center">User CAL</p>
         </div>
       </div>
     </div>
 
-    <div>
-      <label className="block font-semibold text-gray-800 mb-2">
-        Training Man Days
-      </label>
-      <div className="flex gap-2">
+     {/* Toggles */}
+    <div className="bg-white rounded-xl shadow p-4 border">
+    <h2 className="text-lg font-semibold text-blue-800 mb-4">Status Flags</h2>
+      <div className="flex flex-wrap justify-center gap-6">
+        {toggleFields
+          .filter(({ key }) => (toggleVisibilityMap[activeTopTab] ?? []).includes(key))
+          .map(({ label, key }) => (
+            <div key={key} className="flex flex-col items-center w-20">
+              <span className="text-sm font-medium text-gray-600 text-center">{label}</span>
+              <button
+                className={`relative w-10 h-6 transition duration-200 ease-in-out rounded-full ${
+                  toggles[activeTopTab]?.[key] ? 'bg-blue-500' : 'bg-gray-300'
+                }`}
+                onClick={() => handleToggle(key)}
+              >
+                <span
+                  className={`absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                    toggles[activeTopTab]?.[key] ? 'translate-x-4' : ''
+                  }`}
+                />
+              </button>
+            </div>
+          ))}
+      </div>
+    </div>
+
+
+
+    </div>
+
+
+    {/* Training Days Section */}
+    <div className="bg-white rounded-xl shadow p-4 border">
+      <h2 className="text-lg font-semibold text-blue-800 mb-4">Contract Mandays</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-4">
+        {/* Training Days */}
         <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Training Days</label>
           <input
             type="number"
-            placeholder="15"
             name="training_days"
             value={clientcontracts.training_days ?? ''}
             onChange={handleChange}
-            className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
+            className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
           />
-          <p className="text-sm text-gray-500 mt-1 text-center">Contract</p>
         </div>
         <div>
+          <label className="block text-sm font-bold text-blue-700 mb-1">(Consumed)</label>
           <input
             type="number"
             name="training_days_consumed"
             value={clientcontracts.training_days_consumed ?? ''}
             onChange={handleChange}
-            className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
+            className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm"
           />
-          <p className="text-sm text-gray-500 mt-1 text-center">Consumed</p>
+        </div>
+
+        {/* Post Training Days */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Post Training Days</label>
+          <input
+            type="number"
+            name="post_training_days"
+            value={clientcontracts.post_training_days ?? ''}
+            onChange={handleChange}
+            className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-bold text-blue-700 mb-1">(Consumed)</label>
+          <input
+            type="number"
+            name="post_training_days_consumed"
+            value={clientcontracts.post_training_days_consumed ?? ''}
+            onChange={handleChange}
+            className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm"
+          />
+        </div>
+
+        {/* FS Generation */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">FS Generation</label>
+          <input
+            type="number"
+            name="fs_generation_contract"
+            value={clientcontracts.fs_generation_contract ?? ''}
+            onChange={handleChange}
+            className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-bold text-blue-700 mb-1">(Consumed)</label>
+          <input
+            type="number"
+            name="fs_generation_consumed"
+            value={clientcontracts.fs_generation_consumed ?? ''}
+            onChange={handleChange}
+            className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm"
+          />
         </div>
       </div>
     </div>
 
-            {/* Post-Training Man Days */}
-            <div>
-              <label className="block font-semibold text-gray-800 mb-2">
-                Post-Training Man Days
-              </label>
-              <div className="flex gap-2">
-                <div>
-                  <input
-                    type="number"
-                    placeholder="15"
-                    name="post_training_days"
-                    // value={(clientcontracts[0]?.post_training_days) || 0}
-                    value={clientcontracts.post_training_days ?? ''}
-                    onChange={handleChange}
-                    className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
-                  />
-                  <p className="text-sm text-gray-500 mt-1 text-center">Contract</p>
-                </div>
-                <div>
-                  <input
-                    type="number"
-                    placeholder="15"
-                    name="post_training_days_consumed"
-                    // value={(clientcontracts[0]?.post_training_days_consumed) || 0}
-                    value={clientcontracts.post_training_days_consumed ?? ''}
-                    onChange={handleChange}
-                    className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
-                  />
-                  <p className="text-sm text-gray-500 mt-1 text-center">Consumed</p>
-                </div>
-              </div>
-            </div>
+   
 
-            <div>
-                <label className="block font-semibold text-gray-800 mb-2">
-                  FS Generation
-                </label>
-                <div className="flex gap-2">
-                  <div>
-                    <input
-                      type="number"
-                      placeholder="15"
-                      name="fs_generation_contract"
-                      // value={(clientcontracts[0]?.fs_generation_contract) || 0}
-                      value={clientcontracts.fs_generation_contract ?? ''}
-                      onChange={handleChange}
-                      className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
-                    />
-                    <p className="text-sm text-gray-500 mt-1 text-center">Contract</p>
-                  </div>
-                  <div>
-                    <input
-                      type="number"
-                      placeholder="15"
-                      name="fs_generation_consumed"
-                      // value={(clientcontracts[0]?.fs_generation_consumed) || 0}
-                      value={clientcontracts.fs_generation_consumed ?? ''}
-                      onChange={handleChange}
-                      className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
-                    />
-                    <p className="text-sm text-gray-500 mt-1 text-center">Consumed</p>
-                  </div>
-                </div>
-              </div>
-
-            {/* FS Generation & Toggles */}
-            <div className="grid grid-cols-1 items-start gap-3 lg:gap-6 ">
-              
-              <div className="flex items-center mt-4 gap-3 lg:gap-6">
-
-                {["cas", "live", "with_sma", "fs_live", "active"].map(key => (
-                <div key={key} className="flex flex-col items-center text-center">
-                  <span className="text-gray-700 text-sm whitespace-nowrap">{key.toUpperCase()}</span>
-                  <button
-                    className={`w-12 h-6 flex items-center rounded-full p-1 ${
-                      toggles[activeTopTab]?.[key] ? "bg-blue-500" : "bg-gray-300"
-                    }`}
-                    onClick={() => handleToggle(key)}
-                  >
-                    <div
-                      className={`w-4 h-4 bg-white rounded-full transform transition-transform ${
-                        toggles[activeTopTab]?.[key] ? "translate-x-6" : ""
-                      }`}
-                    />
-                  </button>
-                </div>
-                ))}
-
-              </div>
-
-            </div>
-
-          </div>
-
-                
-          )      
-          }
+  </div>
+)}
 
 
-    {/* HRPAY Content */}
-    {activeTopTab === "HR-PAY" && (
-  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 p-6 gap-4 text-sm">
 
-    
-    {/* Number of Users */}
+  {/* HRPAY Content */}
+  {activeTopTab === "HR-PAY" && (
+  <div className="p-4 space-y-6">
 
-    <div>
-      <label className="block font-semibold text-gray-800 mb-2">
-        No. of Users / Employees
-      </label>
-      <div className="flex gap-2">
+  {/* Contract Details + Toggles in One Row */}
+  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+    {/* Contract Section */}
+    <div className="bg-white rounded-xl shadow p-4 border">
+      <h2 className="text-lg font-semibold text-blue-800 mb-4">Contract Details</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Signed Contract Date</label>
+          <input
+            type="date"
+            name="contract_date"
+            value={clientcontracts.contract_date ?? ''}
+            onChange={handleChange}
+            className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">SMA Renewal Date</label>
+          <input
+            type="date"
+            name="sma_date"
+            value={clientcontracts.sma_date ?? ''}
+            onChange={handleChange}
+            className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">No. of Users</label>
           <input
             type="number"
-            placeholder="Count"
             name="numberOfUsers"
             value={clientcontracts.numberOfUsers ?? ''}
             onChange={handleChange}
-            className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
+            className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
           />
-          <p className="text-sm text-gray-500 mt-1 text-center">Users</p>
         </div>
         <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">No. of Employees</label>
           <input
             type="number"
             name="numberOfEmployees"
             value={clientcontracts.numberOfEmployees ?? ''}
             onChange={handleChange}
-            className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
+            className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
           />
-          <p className="text-sm text-gray-500 mt-1 text-center">Employees</p>
         </div>
       </div>
     </div>
 
+     {/* Toggles */}
+    <div className="bg-white rounded-xl shadow p-4 border">
+    <h2 className="text-lg font-semibold text-blue-800 mb-4">Status Flags</h2>
+      <div className="flex flex-wrap justify-center gap-6">
+        {toggleFields
+          .filter(({ key }) => (toggleVisibilityMap[activeTopTab] ?? []).includes(key))
+          .map(({ label, key }) => (
+            <div key={key} className="flex flex-col items-center w-20">
+              <span className="text-sm font-medium text-gray-600 text-center">{label}</span>
+              <button
+                className={`relative w-10 h-6 transition duration-200 ease-in-out rounded-full ${
+                  toggles[activeTopTab]?.[key] ? 'bg-blue-500' : 'bg-gray-300'
+                }`}
+                onClick={() => handleToggle(key)}
+              >
+                <span
+                  className={`absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                    toggles[activeTopTab]?.[key] ? 'translate-x-4' : ''
+                  }`}
+                />
+              </button>
+            </div>
+          ))}
+      </div>
+    </div>
 
-    <div>
-      <label className="block font-semibold text-gray-800 mb-2">
-        Training Man Days
-      </label>
-      <div className="flex gap-2">
+
+
+    </div>
+
+
+    {/* Training Days Section */}
+    <div className="bg-white rounded-xl shadow p-4 border">
+      <h2 className="text-lg font-semibold text-blue-800 mb-4">Contract Mandays</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        {/* Training Days */}
         <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Training Days</label>
           <input
             type="number"
-            placeholder="15"
             name="training_days"
             value={clientcontracts.training_days ?? ''}
             onChange={handleChange}
-            className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
+            className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
           />
-          <p className="text-sm text-gray-500 mt-1 text-center">Contract</p>
         </div>
         <div>
+          <label className="block text-sm font-bold text-blue-700 mb-1">(Consumed)</label>
           <input
             type="number"
             name="training_days_consumed"
             value={clientcontracts.training_days_consumed ?? ''}
             onChange={handleChange}
-            className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
+            className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm"
           />
-          <p className="text-sm text-gray-500 mt-1 text-center">Consumed</p>
+        </div>
+
+        {/* Post Training Days */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Post Training Days</label>
+          <input
+            type="number"
+            name="post_training_days"
+            value={clientcontracts.post_training_days ?? ''}
+            onChange={handleChange}
+            className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-bold text-blue-700 mb-1">(Consumed)</label>
+          <input
+            type="number"
+            name="post_training_days_consumed"
+            value={clientcontracts.post_training_days_consumed ?? ''}
+            onChange={handleChange}
+            className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm"
+          />
         </div>
       </div>
     </div>
 
-            {/* Post-Training Man Days */}
-            <div>
-              <label className="block font-semibold text-gray-800 mb-2">
-                Post-Training Man Days
-              </label>
-              <div className="flex gap-2">
-                <div>
-                  <input
-                    type="number"
-                    placeholder="15"
-                    name="post_training_days"
-                    value={clientcontracts.post_training_days ?? ''}
-                    onChange={handleChange}
-                    className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
-                  />
-                  <p className="text-sm text-gray-500 mt-1 text-center">Contract</p>
-                </div>
-                <div>
-                  <input
-                    type="number"
-                    placeholder="15"
-                    name="post_training_days_consumed"
-                    value={clientcontracts.post_training_days_consumed ?? ''}
-                    onChange={handleChange}
-                    className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
-                  />
-                  <p className="text-sm text-gray-500 mt-1 text-center">Consumed</p>
-                </div>
-              </div>
-            </div>
+   
 
-          
-            <div className="grid grid-cols-1 items-start gap-3 lg:gap-6 ">
-              
-              <div className="flex items-center mt-4 gap-3 lg:gap-6">
+  </div> 
+)}
 
-                {["live", "with_sma", "active"].map(key => (
-                <div key={key} className="flex flex-col items-center text-center">
-                  <span className="text-gray-700 text-sm whitespace-nowrap">{key.toUpperCase()}</span>
-                  <button
-                    className={`w-12 h-6 flex items-center rounded-full p-1 ${
-                      toggles[activeTopTab]?.[key] ? "bg-blue-500" : "bg-gray-300"
-                    }`}
-                    onClick={() => handleToggle(key)}
-                  >
-                    <div
-                      className={`w-4 h-4 bg-white rounded-full transform transition-transform ${
-                        toggles[activeTopTab]?.[key] ? "translate-x-6" : ""
-                      }`}
-                    />
-                  </button>
-                </div>
-                ))}
+  {/* REALTY Content */}
+  {activeTopTab === "REALTY" && (
+  <div className="p-4 space-y-6">
 
-              </div>
+  {/* Contract Details + Toggles in One Row */}
+  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-            </div>
-
-
-          </div>
-
-                
-          )      
-          }
-
-          {/* REALTY Content */}
-    {activeTopTab === "REALTY" && (
-  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 p-6 gap-4 text-sm">
-
-    
-    {/* Number of Users */}
-
-    <div>
-      <label className="block font-semibold text-gray-800 mb-2">
-        No. of Users
-      </label>
-      <div className="flex gap-2">
-       <div>
+    {/* Contract Section */}
+    <div className="bg-white rounded-xl shadow p-4 border">
+      <h2 className="text-lg font-semibold text-blue-800 mb-4">Contract Details</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Signed Contract Date</label>
+          <input
+            type="date"
+            name="contract_date"
+            value={clientcontracts.contract_date ?? ''}
+            onChange={handleChange}
+            className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">SMA Renewal Date</label>
+          <input
+            type="date"
+            name="sma_date"
+            value={clientcontracts.sma_date ?? ''}
+            onChange={handleChange}
+            className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">No. of Users</label>
           <input
             type="number"
-            placeholder="Count"
             name="numberOfUsers"
             value={clientcontracts.numberOfUsers ?? ''}
             onChange={handleChange}
-            className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
+            className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
           />
-          <p className="text-sm text-gray-500 mt-1 text-center">Users</p>
         </div>
       </div>
     </div>
 
-    <div>
-      <label className="block font-semibold text-gray-800 mb-2">
-        Training Man Days
-      </label>
-      <div className="flex gap-2">
+     {/* Toggles */}
+    <div className="bg-white rounded-xl shadow p-4 border">
+    <h2 className="text-lg font-semibold text-blue-800 mb-4">Status Flags</h2>
+      <div className="flex flex-wrap justify-center gap-6">
+        {toggleFields
+          .filter(({ key }) => (toggleVisibilityMap[activeTopTab] ?? []).includes(key))
+          .map(({ label, key }) => (
+            <div key={key} className="flex flex-col items-center w-20">
+              <span className="text-sm font-medium text-gray-600 text-center">{label}</span>
+              <button
+                className={`relative w-10 h-6 transition duration-200 ease-in-out rounded-full ${
+                  toggles[activeTopTab]?.[key] ? 'bg-blue-500' : 'bg-gray-300'
+                }`}
+                onClick={() => handleToggle(key)}
+              >
+                <span
+                  className={`absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                    toggles[activeTopTab]?.[key] ? 'translate-x-4' : ''
+                  }`}
+                />
+              </button>
+            </div>
+          ))}
+      </div>
+    </div>
+
+
+
+    </div>
+
+
+    {/* Training Days Section */}
+    <div className="bg-white rounded-xl shadow p-4 border">
+      <h2 className="text-lg font-semibold text-blue-800 mb-4">Contract Mandays</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        {/* Training Days */}
         <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Training Days</label>
           <input
             type="number"
-            placeholder="15"
             name="training_days"
             value={clientcontracts.training_days ?? ''}
             onChange={handleChange}
-            className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
+            className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
           />
-          <p className="text-sm text-gray-500 mt-1 text-center">Contract</p>
         </div>
         <div>
+          <label className="block text-sm font-bold text-blue-700 mb-1">(Consumed)</label>
           <input
             type="number"
             name="training_days_consumed"
             value={clientcontracts.training_days_consumed ?? ''}
             onChange={handleChange}
-            className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
+            className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm"
           />
-          <p className="text-sm text-gray-500 mt-1 text-center">Consumed</p>
+        </div>
+
+        {/* Post Training Days */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Post Training Days</label>
+          <input
+            type="number"
+            name="post_training_days"
+            value={clientcontracts.post_training_days ?? ''}
+            onChange={handleChange}
+            className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-bold text-blue-700 mb-1">(Consumed)</label>
+          <input
+            type="number"
+            name="post_training_days_consumed"
+            value={clientcontracts.post_training_days_consumed ?? ''}
+            onChange={handleChange}
+            className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm"
+          />
         </div>
       </div>
     </div>
 
-            {/* Post-Training Man Days */}
-            <div>
-              <label className="block font-semibold text-gray-800 mb-2">
-                Post-Training Man Days
-              </label>
-              <div className="flex gap-2">
-                <div>
-                  <input
-                    type="number"
-                    placeholder="15"
-                    name="post_training_days"
-                    value={clientcontracts.post_training_days ?? ''}
-                    onChange={handleChange}
-                    className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
-                  />
-                  <p className="text-sm text-gray-500 mt-1 text-center">Contract</p>
-                </div>
-                <div>
-                  <input
-                    type="number"
-                    placeholder="15"
-                    name="post_training_days_consumed"
-                    value={clientcontracts.post_training_days_consumed ?? ''}
-                    onChange={handleChange}
-                    className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
-                  />
-                  <p className="text-sm text-gray-500 mt-1 text-center">Consumed</p>
-                </div>
-              </div>
-            </div>
+   
 
-          
-            <div className="grid grid-cols-1 items-start gap-3 lg:gap-6 ">
-              
-              <div className="flex items-center mt-4 gap-3 lg:gap-6">
+  </div> 
+               
+)}
 
-                {["live", "with_sma", "active"].map(key => (
-                <div key={key} className="flex flex-col items-center text-center">
-                  <span className="text-gray-700 text-sm whitespace-nowrap">{key.toUpperCase()}</span>
-                  <button
-                    className={`w-12 h-6 flex items-center rounded-full p-1 ${
-                      toggles[activeTopTab]?.[key] ? "bg-blue-500" : "bg-gray-300"
-                    }`}
-                    onClick={() => handleToggle(key)}
-                  >
-                    <div
-                      className={`w-4 h-4 bg-white rounded-full transform transition-transform ${
-                        toggles[activeTopTab]?.[key] ? "translate-x-6" : ""
-                      }`}
-                    />
-                  </button>
-                </div>
-                ))}
+  {/* WMS Content */}
+  {activeTopTab === "WMS" && (
+  <div className="p-4 space-y-6">
 
-              </div>
+  {/* Contract Details + Toggles in One Row */}
+  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-            </div>
-
-
-          </div>
-
-                
-          )      
-          }
-
-          {/* WMS Content */}
-    {activeTopTab === "WMS" && (
-  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 p-6 gap-4 text-sm">
-
-    
-    {/* Number of Users */}
-
-    <div>
-      <label className="block font-semibold text-gray-800 mb-2">
-        No. of Users
-      </label>
-      <div className="flex gap-2">
+    {/* Contract Section */}
+    <div className="bg-white rounded-xl shadow p-4 border">
+      <h2 className="text-lg font-semibold text-blue-800 mb-4">Contract Details</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Signed Contract Date</label>
+          <input
+            type="date"
+            name="contract_date"
+            value={clientcontracts.contract_date ?? ''}
+            onChange={handleChange}
+            className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">SMA Renewal Date</label>
+          <input
+            type="date"
+            name="sma_date"
+            value={clientcontracts.sma_date ?? ''}
+            onChange={handleChange}
+            className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">No. of Users</label>
           <input
             type="number"
-            placeholder="Count"
             name="numberOfUsers"
             value={clientcontracts.numberOfUsers ?? ''}
             onChange={handleChange}
-            className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
+            className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
           />
-          <p className="text-sm text-gray-500 mt-1 text-center">Count</p>
         </div>
       </div>
     </div>
 
-    <div>
-      <label className="block font-semibold text-gray-800 mb-2">
-        Training Man Days
-      </label>
-      <div className="flex gap-2">
+     {/* Toggles */}
+    <div className="bg-white rounded-xl shadow p-4 border">
+    <h2 className="text-lg font-semibold text-blue-800 mb-4">Status Flags</h2>
+      <div className="flex flex-wrap justify-center gap-6">
+        {toggleFields
+          .filter(({ key }) => (toggleVisibilityMap[activeTopTab] ?? []).includes(key))
+          .map(({ label, key }) => (
+            <div key={key} className="flex flex-col items-center w-20">
+              <span className="text-sm font-medium text-gray-600 text-center">{label}</span>
+              <button
+                className={`relative w-10 h-6 transition duration-200 ease-in-out rounded-full ${
+                  toggles[activeTopTab]?.[key] ? 'bg-blue-500' : 'bg-gray-300'
+                }`}
+                onClick={() => handleToggle(key)}
+              >
+                <span
+                  className={`absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                    toggles[activeTopTab]?.[key] ? 'translate-x-4' : ''
+                  }`}
+                />
+              </button>
+            </div>
+          ))}
+      </div>
+    </div>
+
+
+
+    </div>
+
+
+    {/* Training Days Section */}
+    <div className="bg-white rounded-xl shadow p-4 border">
+      <h2 className="text-lg font-semibold text-blue-800 mb-4">Contract Mandays</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        {/* Training Days */}
         <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Training Days</label>
           <input
             type="number"
-            placeholder="15"
             name="training_days"
             value={clientcontracts.training_days ?? ''}
             onChange={handleChange}
-            className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
+            className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
           />
-          <p className="text-sm text-gray-500 mt-1 text-center">Contract</p>
         </div>
         <div>
+          <label className="block text-sm font-bold text-blue-700 mb-1">(Consumed)</label>
           <input
             type="number"
             name="training_days_consumed"
             value={clientcontracts.training_days_consumed ?? ''}
             onChange={handleChange}
-            className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
+            className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm"
           />
-          <p className="text-sm text-gray-500 mt-1 text-center">Consumed</p>
+        </div>
+
+        {/* Post Training Days */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Post Training Days</label>
+          <input
+            type="number"
+            name="post_training_days"
+            value={clientcontracts.post_training_days ?? ''}
+            onChange={handleChange}
+            className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-bold text-blue-700 mb-1">(Consumed)</label>
+          <input
+            type="number"
+            name="post_training_days_consumed"
+            value={clientcontracts.post_training_days_consumed ?? ''}
+            onChange={handleChange}
+            className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm"
+          />
         </div>
       </div>
     </div>
 
-            {/* Post-Training Man Days */}
-            <div>
-              <label className="block font-semibold text-gray-800 mb-2">
-                Post-Training Man Days
-              </label>
-              <div className="flex gap-2">
-                <div>
+   
+
+  </div> 
+
+
+)}
+
+      {/* Modules Section */}
+      <div className="p-4 space-y-6">
+
+        {/* Modules & Technicians Row */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+          {/* Main Modules Card */}
+          <div className="bg-white rounded-xl shadow p-4 border">
+            <h3 className="text-lg font-semibold text-blue-800 mb-4">Modules / Services</h3>
+            <div className="space-y-2">
+              {currentMainModules.map((module) => (
+                <label key={module} className="flex items-center space-x-3">
                   <input
-                    type="number"
-                    placeholder="15"
-                    name="post_training_days"
-                    value={clientcontracts.post_training_days ?? ''}
-                    onChange={handleChange}
-                    className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
+                    type="checkbox"
+                    checked={currentSelectedModules.includes(module)}
+                    onChange={() => handleModuleToggle(module)}
+                    className="h-4 w-4 text-blue-600 border-gray-300 rounded"
                   />
-                  <p className="text-sm text-gray-500 mt-1 text-center">Contract</p>
-                </div>
-                <div>
-                  <input
-                    type="number"
-                    placeholder="15"
-                    name="post_training_days_consumed"
-                    value={clientcontracts.post_training_days_consumed ?? ''}
-                    onChange={handleChange}
-                    className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
-                  />
-                  <p className="text-sm text-gray-500 mt-1 text-center">Consumed</p>
-                </div>
-              </div>
-            </div>
-
-          
-            <div className="grid grid-cols-1 items-start gap-3 lg:gap-6 ">
-              
-              <div className="flex items-center mt-4 gap-3 lg:gap-6">
-
-                {["live", "with_sma", "active"].map(key => (
-                <div key={key} className="flex flex-col items-center text-center">
-                  <span className="text-gray-700 text-sm whitespace-nowrap">{key.toUpperCase()}</span>
-                  <button
-                    className={`w-12 h-6 flex items-center rounded-full p-1 ${
-                      toggles[activeTopTab]?.[key] ? "bg-blue-500" : "bg-gray-300"
-                    }`}
-                    onClick={() => handleToggle(key)}
-                  >
-                    <div
-                      className={`w-4 h-4 bg-white rounded-full transform transition-transform ${
-                        toggles[activeTopTab]?.[key] ? "translate-x-6" : ""
-                      }`}
-                    />
-                  </button>
-                </div>
-                ))}
-
-              </div>
-
-            </div>
-
-
-          </div>
-
-                
-          )      
-          }
-
-        {/* Modules Section */}
-<div className="mb-6 px-4">
-  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 items-start text-sm">
-    
-    {/* Main Modules */}
-    <div>
-      <h3 className="text-gray-800 font-semibold mb-2">Modules / Services</h3>
-      <div className="space-y-2">
-        {currentMainModules.map((module) => (
-          <label key={module} className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              checked={currentSelectedModules.includes(module)}
-              onChange={() => handleModuleToggle(module)}
-              className="form-checkbox h-4 w-4 text-blue-600"
-            />
-            <span className="text-gray-700">{module}</span>
-          </label>
-        ))}
-      </div>
-    </div>
-
-    {/* Other Modules */}
-    <div>
-      <h3 className="text-gray-800 font-semibold mb-2">Other Modules</h3>
-      <div className="space-y-2">
-        {currentOtherModules.map((module) => {
-          const isChecked = currentSelectedModules.includes(module);
-          const toggleModule = () => {
-            const newModules = isChecked
-              ? currentSelectedModules.filter(m => m !== module)
-              : [...currentSelectedModules, module];
-            setTabModules(prev => ({
-              ...prev,
-              [activeTopTab]: newModules
-            }));
-            setPendingChanges(prev => ({ ...prev, modules: newModules }));
-          };
-
-          return (
-            <label key={module} className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                checked={isChecked}
-                onChange={toggleModule}
-                className="form-checkbox h-4 w-4 bg-blue-500"
-              />
-              <span className="text-gray-700">{module}</span>
-            </label>
-          );
-        })}
-      </div>
-    </div>
-
-    {/* Technicians Assigned */}
-    <div className="pr-4">
-      <label className="block text-gray-700 mb-2">Technical Assigned</label>
-      {technicianInputs.map((tech, index) => {
-        const techValue = tech.includes(" (") ? tech.split(" (")[0] : tech;
-        return (
-          <div key={index} className="flex items-center gap-2 mb-2">
-            <select
-              value={techValue}
-              onChange={(e) => handleTechnicianChange(index, e.target.value)}
-              className="p-2 border border-gray-300 rounded flex-1 text-sm w-full"
-            >
-              <option value="">Select Technician</option>
-              {technicians.map((name) => (
-                <option
-                  key={name}
-                  value={name}
-                  disabled={technicianInputs.some(t => t.startsWith(`${name} (`)) && !tech.startsWith(`${name} (`)}
-                >
-                  {name} ({technicianCodeMap[name]})
-                </option>
+                  <span className="text-sm text-gray-700">{module}</span>
+                </label>
               ))}
-            </select>
-            {index === technicianInputs.length - 1 ? (
-              <button
-                type="button"
-                onClick={addTechnicianInput}
-                className="bg-blue-600 text-white p-2 rounded hover:bg-blue-700 w-9 h-9 flex items-center justify-center"
-              >
-                <FaPlus />
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => removeTechnicianInput(index)}
-                className="bg-red-600 text-white p-2 rounded hover:bg-red-700 w-9 h-9 flex items-center justify-center"
-              >
-                <FaMinus />
-              </button>
-            )}
+            </div>
           </div>
-        );
-      })}
-    </div>
+
+          {/* Other Modules Card */}
+          <div className="bg-white rounded-xl shadow p-4 border">
+            <h3 className="text-lg font-semibold text-blue-800 mb-4">Other Modules</h3>
+            <div className="space-y-2">
+              {currentOtherModules.map((module) => {
+                const isChecked = currentSelectedModules.includes(module);
+                const toggleModule = () => {
+                  const newModules = isChecked
+                    ? currentSelectedModules.filter(m => m !== module)
+                    : [...currentSelectedModules, module];
+                  setTabModules(prev => ({
+                    ...prev,
+                    [activeTopTab]: newModules
+                  }));
+                  setPendingChanges(prev => ({ ...prev, modules: newModules }));
+                };
+
+                return (
+                  <label key={module} className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={toggleModule}
+                      className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                    />
+                    <span className="text-sm text-gray-700">{module}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Technicians Card */}
+          <div className="bg-white rounded-xl shadow p-4 border">
+            <h3 className="text-lg font-semibold text-blue-800 mb-4">Technical Assigned</h3>
+            <div className="space-y-3">
+              {technicianInputs.map((tech, index) => {
+                const techValue = tech.includes(" (") ? tech.split(" (")[0] : tech;
+                return (
+                  <div key={index} className="flex flex-col sm:flex-row sm:items-center gap-2">
+                    <select
+                      value={techValue}
+                      onChange={(e) => handleTechnicianChange(index, e.target.value)}
+                      className={`flex-1 p-2 border border-gray-300 rounded-md text-sm ${
+                        techValue === '' ? 'text-blue-700' : 'text-gray-800'
+                      }`}
+                    >
+                      <option value="">Select Technical</option>
+                      {technicians.map((name) => (
+                        <option
+                          key={name}
+                          value={name}
+                          disabled={
+                            technicianInputs.some(t => t.startsWith(`${name} (`)) &&
+                            !tech.startsWith(`${name} (`)
+                          }
+                        >
+                          {name} ({technicianCodeMap[name]})
+                        </option>
+                      ))}
+                    </select>
+                    {index === technicianInputs.length - 1 ? (
+                      <button
+                        type="button"
+                        onClick={addTechnicianInput}
+                        className="bg-blue-600 text-white p-2 rounded hover:bg-blue-700 w-full sm:w-9 h-9 flex items-center justify-center"
+                      >
+                        <FaPlus />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => removeTechnicianInput(index)}
+                        className="bg-red-600 text-white p-2 rounded hover:bg-red-700 w-full sm:w-9 h-9 flex items-center justify-center"
+                      >
+                        <FaMinus />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+        </div>
+
+
+
+    {/* Help Desk on separate row */}
+
+<div className="bg-white rounded-xl shadow p-4 border">
+  <div className="flex items-center justify-start mb-4">
+    <h2 className="text-lg font-semibold text-blue-800 pr-2">HelpDesk Details  </h2>
+    {!isEditingHelpdesk && (
+      <button
+        type="button"
+        onClick={() => setIsEditingHelpdesk(true)}
+        className="text-lg text-blue-600 hover:underline whitespace-nowrap font-bold"
+      >
+         (Click to Edit URL)
+      </button>
+    )}
   </div>
 
-  {/* Save Button */}
-  <div className="flex justify-center py-4">
-    <button
-      className="bg-blue-600 text-white font-semibold px-28 py-2 rounded-lg shadow-md hover:bg-blue-800 transition duration-300"
-      onClick={handleSave}
-      disabled={isSaving}
-    >
-      {isSaving ? (
-        <>
-          <svg
-            className="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
+  <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+    <div className="w-full">
+      {!isEditingHelpdesk ? (
+        <div className="text-base font-semibold break-all text-blue-600 hover:underline">
+          {client.helpdesk ? (
+            <a
+              href={client.helpdesk.startsWith('http') ? client.helpdesk : `https://${client.helpdesk}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {client.helpdesk}
+            </a>
+          ) : (
+            <span className="text-gray-400 italic">No link provided</span>
+          )}
+        </div>
+      ) : (
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            name="helpdesk"
+            placeholder="Enter Help Desk URL"
+            value={client.helpdesk || ""}
+            onChange={handleChange}
+            className="p-2 border border-gray-300 rounded text-sm w-full"
+          />
+          <button
+            type="button"
+            onClick={() => setIsEditingHelpdesk(false)}
+            className="text-base text-blue-600 hover:underline whitespace-nowrap font-bold"
           >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            ></circle>
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            ></path>
-          </svg>
-          {isViewMode ? "Updating..." : "Saving..."}
-        </>
-      ) : isViewMode ? "Update" : "Save"}
-    </button>
+            Done
+          </button>
+        </div>
+      )}
+    </div>
   </div>
 </div>
 
 
+
+        {/* Save Button */}
+        <div className="flex justify-center pt-6">
+          <button
+            onClick={handleSave}
+            disabled={isSaving}
+            className={`px-28 py-2 font-semibold rounded-lg shadow-md transition duration-300 ${
+              isSaving ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-800 text-white"
+            }`}
+          >
+            {isSaving ? (
+              <>
+                <svg
+                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  />
+                </svg>
+                {isViewMode ? "Updating..." : "Saving..."}
+              </>
+            ) : (
+              isViewMode ? "Update" : "Save"
+            )}
+          </button>
         </div>
+      </div>
+      
+
+
+
+        </div>
+
 
 
 
@@ -2100,7 +2225,7 @@ const clientContractPayload = [{
 
 
         {/* Bottom Tabs */}
-        <div className="flex flex-wrap justify-center mb-5 sm:justify-start gap-4 text-sm sm:gap-10 bg-blue-600 text-white rounded-t-md p-3 lg:gap-[150px] lg:text-base">
+        {/* <div className="flex flex-wrap justify-center mb-5 sm:justify-start gap-4 text-sm sm:gap-10 bg-blue-600 text-white rounded-t-md p-3 lg:gap-[150px] lg:text-base">
           {["Contact Information", "Server Information", "Attachment", "SMA Information"].map((tab) => (
             <button
               key={tab}
@@ -2117,27 +2242,51 @@ const clientContractPayload = [{
               {tab}
             </button>
           ))}
-        </div>
+        </div> */}
+
+        {/* APPLICATION TABS */}
+<div className="mt-6 text-sm lg:text-base bg-blue-100">
+  <div className="grid grid-cols-2 sm:flex sm:justify-between bg-blue-600 text-white rounded-t-xl px-4 py-2 gap-2">
+  {["Contact Information", "Server Information", "Attachment", "SMA Information"].map((tab) => (
+    <button
+      key={tab}
+      onClick={() => {
+        setActiveTab(tab);
+        if (tab === "Attachment") setSelectedAttachmentType(null);
+      }}
+      className={`w-full text-center px-4 py-2 font-semibold rounded-t-md transition-all duration-100
+        ${
+          activeTab === tab
+            ? "bg-white text-blue-600 shadow-md border-b-2 border-blue-600"
+            : "opacity-80 hover:opacity-100 hover:bg-blue-500"
+        }`}
+    >
+      {tab}
+    </button>
+  ))}
+</div>
+
 
         {/* Tab Content */}
         {activeTab === "Contact Information" && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 mt-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 mt-6 p-4">
             {(client.contact_persons || ["", ""]).map((person, index) => (
   <div key={index}>
     <label className="block font-medium text-gray-700 mb-2">
       Contact Person
     </label>
     <input
-      type="text"
-      placeholder="Sample"
-      value={person}
-      onChange={(e) => {
-        const updatedContacts = [...(client.contact_persons || ["", ""])];
-        updatedContacts[index] = e.target.value;
-        setClient(prev => ({ ...prev, contact_persons: updatedContacts }));
-      }}
-      className="p-2 border border-gray-300 rounded w-full"
-    />
+  type="text"
+  placeholder="Contact"
+  value={person}
+  onChange={(e) => {
+    const updatedContacts = [...(client.contact_persons || ["", ""])];
+    updatedContacts[index] = e.target.value;
+    setClient(prev => ({ ...prev, contact_persons: updatedContacts }));
+  }}
+  className="p-2 border border-gray-300 rounded w-full shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+/>
+
   </div>
 ))}
 
@@ -2147,7 +2296,7 @@ const clientContractPayload = [{
         {activeTab === "Server Information" && (
   <>
   {/* 4-column grid for Anydesk + Server Passwords */}
-  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 mt-6">
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 mt-6 p-4">
     {/* Anydesk ID */}
     <div>
       <label className="block font-medium text-gray-700 mb-2">
@@ -2156,11 +2305,11 @@ const clientContractPayload = [{
       <input
         type="text"
         name="remote_id"
-        placeholder="15"
+        placeholder="Server's Anydesk ID"
         value={client.remote_id || ""}
         onChange={handleChange}
-        className="p-2 border border-gray-300 rounded w-full"
-      />
+        className="p-2 border border-gray-300 rounded w-full shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+/>
     </div>
 
     {/* Anydesk Password */}
@@ -2174,8 +2323,8 @@ const clientContractPayload = [{
         placeholder="P@ssw0rd123"
         value={client.remote_pw || ""}
         onChange={handleChange}
-        className="p-2 border border-gray-300 rounded w-full pr-10"
-      />
+        className="p-2 border border-gray-300 rounded w-full shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+/>
       <div
         className="absolute top-[70%] right-3 transform -translate-y-1/2 cursor-pointer text-gray-500"
         onClick={() => setShowRemotePw(!showRemotePw)}
@@ -2195,7 +2344,7 @@ const clientContractPayload = [{
         placeholder="Password2023"
         value={client.server_pw || ""}
         onChange={handleChange}
-        className="p-2 border border-gray-300 rounded w-full pr-10"
+        className="p-2 border border-gray-300 rounded w-full shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
       />
       <div
         className="absolute top-[70%] right-3 transform -translate-y-1/2 cursor-pointer text-gray-500"
@@ -2206,189 +2355,210 @@ const clientContractPayload = [{
     </div>
   </div>
 
-  {/* Help Desk on separate row */}
-  <div className="mb-6">
-
-    <label className="block font-medium text-gray-700 mb-2">
-      Help Desk URL 
-      {client.helpdesk && (
-      <a
-        href={client.helpdesk.startsWith('http') ? client.helpdesk : `https://${client.helpdesk}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-blue-600 hover:underline mt-2 inline-block font-bold px-2"
-      >
-         (Go to Help Desk)
-      </a>
-    )}
-    </label>
-
-    <input
-      type="text"
-      name="helpdesk"
-      placeholder="URL"
-      value={client.helpdesk || ""}
-      onChange={handleChange}
-      className="p-2 border border-gray-300 rounded w-full text-sm"
-    />
-    
-  </div>
+  
 </>
 
 )}
 
 
-        {/* Attachment Tab */}
-        {activeTab === "Attachment" && (
-          <div>
-            <div className="flex flex-wrap justify-center sm:justify-start gap-4 text-sm sm:gap-10 bg-blue-600 text-white rounded-t-md p-3 lg:gap-[150px] lg:text-base">
-              {["Client Service Form", "Turn-Over Documents"].map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setSelectedAttachmentType(tab)}
-                  className={`pb-2 font-semibold transition-opacity ${
-                    selectedAttachmentType === tab
-                      ? "text-white border-b-2 border-white opacity-100"
-                      : "opacity-70 hover:opacity-100"
-                  }`}
+ {/* Attachment Tab */}
+{activeTab === "Attachment" && (
+  <div>
+    {/* Sub-tab buttons */}
+    {/* <div className="flex flex-wrap justify-center sm:justify-start gap-4 sm:gap-10 lg:gap-[150px] bg-blue-600 text-white rounded-t-md p-3 text-sm lg:text-base">
+  {["Client Service Form", "Turn-Over Documents"].map((tab) => (
+    <button
+      key={tab}
+      onClick={() => setSelectedAttachmentType(tab)}
+      className={`relative pb-2 px-3 font-semibold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-white rounded-sm ${
+        selectedAttachmentType === tab
+          ? "text-white after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-white"
+          : "opacity-70 hover:opacity-100"
+      }`}
+    >
+      {tab}
+    </button>
+  ))}
+</div> */}
+
+<div className="grid grid-cols-2 sm:flex sm:justify-between bg-blue-600 text-white px-4 py-2 gap-2">
+    {["Client Service Form", "Turn-Over Documents"].map((tab) => (
+      <button
+        key={tab}
+      onClick={() => setSelectedAttachmentType(tab)}
+        className={`w-full text-center px-4 py-2 font-semibold rounded-t-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white
+          ${
+            selectedAttachmentType === tab
+              ? "bg-white text-blue-600 shadow-md"
+              : "opacity-80 hover:opacity-100"
+          }`}
+      >
+        {tab}
+      </button>
+    ))}
+  </div>
+
+
+    {/* File table */}
+    {selectedAttachmentType && (
+      <div className="bg-blue-100 rounded-b-md p-4">
+    {/* Add File Button */}
+    <div className="text-right mb-4">
+      <button
+        onClick={() => handleAddFileClick('clientService')}
+        className="inline-flex items-center px-4 py-2 bg-blue-600 border border-gray-300 rounded shadow-sm hover:bg-blue-700 transition"
+      >
+        <FaPlus className="text-gray-100 mr-2" />
+        <span className="font-semibold text-gray-100">Add New File</span>
+      </button>
+    </div>
+
+        
+    <div className="overflow-x-auto rounded-xl shadow">
+      <table className="min-w-full bg-white border border-gray-300 text-sm">
+        <thead className="bg-blue-500 text-gray-100 sticky top-0 z-10">
+          <tr>
+                <th className="p-3 text-left whitespace-nowrap">File Name</th>
+                <th className="p-3 text-left whitespace-nowrap">Upload Date</th>
+                <th className="p-3 text-left whitespace-nowrap">Signed Date</th>
+                <th className="p-3 text-center whitespace-nowrap">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {clientServiceFiles.map((file) => (
+                <tr
+                  key={file.file_id}
+                  className="border-b hover:bg-blue-50 transition"
                 >
-                  {tab}
-                </button>
-              ))}
-            </div>
-
-            {selectedAttachmentType && (
-              <div className="bg-blue-50 rounded-b-md">
-  <div className="p-2 text-right cursor-pointer" onClick={() => handleAddFileClick('clientService')}>
-    <span className="inline-flex items-center space-x-2">
-      <FaPlus className="text-blue-500" />
-      <span className="font-semibold text-gray-700">Add New File</span>
-    </span>
-  </div>
-
-  {/* ✅ Scrollable wrapper for mobile */}
-  <div className="overflow-x-auto">
-    <table className="min-w-full bg-white border border-gray-300 text-sm">
-      <thead>
-        <tr className="border-b bg-blue-300">
-          <th className="p-2 text-left whitespace-nowrap">File Name</th>
-          <th className="p-2 text-left whitespace-nowrap">Upload Date</th>
-          <th className="p-2 text-left whitespace-nowrap">Signed Date</th>
-          <th className="p-2 text-right px-10 whitespace-nowrap">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {clientServiceFiles.map((file) => (
-          <tr key={file.file_id} className="border-b">
-            <td className="p-2 whitespace-nowrap">{file.original_name}</td>
-            <td className="p-2 whitespace-nowrap">
-              {file.upload_date ? new Date(file.upload_date).toLocaleDateString() : 'N/A'}
-            </td>
-            <td className="p-2 whitespace-nowrap">
-              {file.signed_date ? new Date(file.signed_date).toLocaleDateString() : 'N/A'}
-            </td>
-            <td className="p-2 flex space-x-2 justify-end whitespace-nowrap">
-              <button
-                onClick={() => handleViewFile(file)}
-                className="p-2 text-blue-500 hover:text-blue-700"
-                title="View"
-              >
-                <FaEye />
-              </button>
-              <button
-                onClick={() => handleDownloadFile(file)}
-                className="p-2 text-green-500 hover:text-green-700"
-                title="Download"
-              >
-                <FaDownload />
-              </button>
-              <button
-                onClick={() => handleDeleteFile(file)}
-                className="p-2 text-red-500 hover:text-red-700"
-                title="Delete"
-              >
-                <FaTrash />
-              </button>
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>
-</div>
-
-            )}
-          </div>
-        )}
-
-        {/* SMA Information Tab */}
-        {activeTab === "SMA Information" && (
-          <div>
-            <div className="p-2 text-right cursor-pointer" onClick={() => handleAddFileClick('smaInformation')}>
-              <span className="inline-flex items-center space-x-2">
-                <FaPlus className="text-blue-500" />
-                <span className="font-semibold text-gray-700">Add New File</span>
-              </span>
-            </div>
-
-            <table className="min-w-full bg-white border border-gray-300 text-sm">
-              <thead>
-                <tr className="border-b bg-blue-300">
-                 <th className="p-2 text-left">File Name</th>
-                  <th className="p-2 text-left">Date Uploaded</th>
-                  <th className="p-2 text-left">Date Signed</th>
-                  <th className="p-2 text-left">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {smaInformationFiles.map((file) => (
-                  <tr key={file.file_id} className="border-b">
-                <td className="p-2">{file.original_name}</td>
-                    <td className="p-2">
-                      {file.upload_date ? new Date(file.upload_date).toLocaleDateString() : 'N/A'}
-                    </td>
-                    <td className="p-2">
-                      <input
-                        type="date"
-                        value={file.signed_date || editedFiles[file.file_id] || ""}
-                        onChange={(e) => {
-                          setEditedFiles(prev => ({
-                            ...prev,
-                            [file.file_id]: e.target.value
-                          }));
-                        }}
-                        className="border border-gray-300 p-1"
-                      />
-                    </td>
-                    <td className="p-2 flex space-x-2 text-center">
+                  <td className="p-3 whitespace-nowrap">{file.original_name}</td>
+                  <td className="p-3 whitespace-nowrap">
+                    {file.upload_date ? new Date(file.upload_date).toLocaleDateString() : 'N/A'}
+                  </td>
+                  <td className="p-2 whitespace-nowrap">
+                    {file.signed_date ? new Date(file.signed_date).toLocaleDateString() : 'N/A'}
+                  </td>
+                  <td className="p-2">
+                    <div className="flex justify-center gap-3">
                       <button
-                onClick={() => handleViewFile(file)}
-                className="p-2 text-blue-500 hover:text-blue-700"
-                title="View"
-              >
-                <FaEye />
-              </button>
-              <button
-                onClick={() => handleDownloadFile(file)}
-                className="p-2 text-green-500 hover:text-green-700"
-                title="Download"
-              >
-                <FaDownload />
-              </button>
-              <button
-                onClick={() => handleDeleteFile(file)}
-                className="p-2 text-red-500 hover:text-red-700"
-                title="Delete"
-              >
-                <FaTrash />
-              </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                        onClick={() => handleViewFile(file)}
+                        className="p-2 bg-blue-100 text-blue-600 hover:bg-blue-200 rounded-full transition"
+                        title="View"
+                      >
+                        <FaEye className="text-lg" />
+                      </button>
+                      <button
+                        onClick={() => handleDownloadFile(file)}
+                        className="p-2 bg-green-100 text-green-600 hover:bg-green-200 rounded-full transition"
+                        title="Download"
+                      >
+                        <FaDownload className="text-lg" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteFile(file)}
+                        className="p-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-full transition"
+                        title="Delete"
+                      >
+                        <FaTrash className="text-lg" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    )}
+  </div>
+)}
+       
+
+  {/* SMA Information Tab */}
+  {activeTab === "SMA Information" && (
+  <div className="bg-blue-100 rounded-b-md p-4">
+    {/* Add File Button */}
+    <div className="text-right mb-4">
+      <button
+        onClick={() => handleAddFileClick('smaInformation')}
+        className="inline-flex items-center px-4 py-2 bg-blue-600 border border-gray-300 rounded shadow-sm hover:bg-blue-700 transition"
+      >
+        <FaPlus className="text-gray-100 mr-2" />
+        <span className="font-semibold text-gray-100">Add New File</span>
+      </button>
+    </div>
+
+    {/* File Table */}
+    <div className="overflow-x-auto rounded-xl shadow">
+      <table className="min-w-full bg-white border border-gray-300 text-sm">
+        <thead className="bg-blue-500 text-gray-100 sticky top-0 z-10">
+          <tr>
+            <th className="p-3 text-left">File Name</th>
+            <th className="p-3 text-left">Date Uploaded</th>
+            <th className="p-3 text-left">Date Signed</th>
+            <th className="p-3 text-center">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {smaInformationFiles.map((file) => (
+            <tr key={file.file_id} className="border-b hover:bg-blue-50">
+              <td className="p-2">{file.original_name}</td>
+              <td className="p-2">
+                {file.upload_date ? new Date(file.upload_date).toLocaleDateString() : 'N/A'}
+              </td>
+              <td className="p-2">
+                <input
+                  type="date"
+                  value={file.signed_date || editedFiles[file.file_id] || ""}
+                  onChange={(e) => {
+                    setEditedFiles((prev) => ({
+                      ...prev,
+                      [file.file_id]: e.target.value,
+                    }));
+                  }}
+                  className="border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-400"
+                />
+              </td>
+              <td className="p-2 text-center">
+                <div className="flex justify-center gap-4">
+                  <button
+                    onClick={() => handleViewFile(file)}
+                    className="p-2 bg-blue-100 text-blue-600 hover:bg-blue-200 rounded-full transition"
+                    title="View"
+                  >
+                    <FaEye className="text-lg" />
+                  </button>
+                  <button
+                    onClick={() => handleDownloadFile(file)}
+                    className="p-2 bg-green-100 text-green-600 hover:bg-green-200 rounded-full transition"
+                    title="Download"
+                  >
+                    <FaDownload className="text-lg" />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteFile(file)}
+                    className="p-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-full transition"
+                    title="Delete"
+                  >
+                    <FaTrash className="text-lg" />
+                  </button>
+                </div>
+              </td>
+
+            </tr>
+          ))}
+          {smaInformationFiles.length === 0 && (
+            <tr>
+              <td colSpan={4} className="p-4 text-center text-gray-500 italic">
+                No files uploaded yet.
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  </div>
+)}
+
 
         {/* Save Button */}
         <div className="flex justify-center mt-6">
@@ -2411,6 +2581,7 @@ const clientContractPayload = [{
 </button>
         </div>
       </div>
+    </div>
     </div>
   );
 };

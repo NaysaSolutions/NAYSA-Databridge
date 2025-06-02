@@ -106,7 +106,7 @@ const Sidebar = ({
                   // setIsMobileOpen(false); // Close mobile on nav
                 }}
               />
-                {/* <SidebarLink
+                <SidebarLink
                 to="/clientsfinancials"
                 icon={faUsers}
                 label="Clients (Financials)"
@@ -116,7 +116,7 @@ const Sidebar = ({
                   closeAddClientForm();
                   // setIsMobileOpen(false); // Close mobile on nav
                 }}
-              /> */}
+              />
 
               <SidebarLink
                 icon={faAdd}
