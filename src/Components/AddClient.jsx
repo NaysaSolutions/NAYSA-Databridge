@@ -8,7 +8,6 @@ import Swal from 'sweetalert2';
 import bcrypt from 'bcryptjs';
 import { Eye, EyeOff } from 'lucide-react'
 import { FaTrash, FaDownload, FaEye } from 'react-icons/fa';
-import Layout from "../Layout";
 
 import FileUpload from "./FileUpload";
 import { FaDeleteLeft } from "react-icons/fa6";
@@ -32,15 +31,8 @@ const AddClientForm = () => {
 
   // Initialize all state at the top
 
-  // const [technicianInputs, setTabTechnicians] = useState([""]);
-  // const [selectedTechnicians, setSelectedTechnicians] = useState([]);
-  // const selectedTechnicians = (tabTechnicians[activeTopTab] || []).filter(t => t !== "");
-
   const [clientTechnicians, setClientTechnicians] = useState([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
-  // const [selectedModules, setSelectedModules] = useState([]);
-  
 
  // Initialize file states properly
 const [clientServiceFiles, setclientServiceFiles] = useState([]);
@@ -60,6 +52,14 @@ const [smaInformationFiles, setSmaInformationFiles] = useState([]);
   const [activeTab2, setActiveTab2] = useState("Client Service Form");
 
   // START MODULE
+
+const mapTogglesToYN = (toggles) => ({
+  cas: toggles.cas ? "Y" : "N",
+  live: toggles.live ? "Y" : "N",
+  with_sma: toggles.with_sma ? "Y" : "N",
+  fs_live: toggles.fs_live ? "Y" : "N",
+  active: toggles.active ? "Y" : "N"
+});
 
 const [activeTopTab, setActiveTopTab] = useState("FINANCIALS");
 const [tabTechnicians, setTabTechnicians] = useState({
@@ -195,70 +195,61 @@ const removeTechnicianInput = (index) => {
   client_code: "",
   client_name: "",
   main_address: "",
-  contract_date: "",
-  cas: "N",
-  live: "N",
-  sma_days: "",
-  fs_live: "N",
-  cal: "",
+  // contract_date: "",
   industry: "",
-  training_days: 0,
-  training_days_consumed: 0,
-  post_training_days: 0,
-  post_training_days_consumed: 0,
-  fs_generation_contract: 0,
-  fs_generation_consumed: 0,
   remote_id: "",
   remote_pw: "",
   server_pw: "",
   helpdesk: "",
-  with_sma: "N",
-  active: "N",
   contact_persons: ["", ""]
 });
 
 
-  const [toggles, setToggles] = useState({
-    cas: false,
-    live: false,
-    with_sma: false,
-    fs_live: false,
-    active: false
-  });
+//   const [clientcontracts, setClientContracts] = useState({
+//   client_code: "",
+//   cas: "N",
+//   live: "N",
+//   sma_days: 0,
+//   fs_live: "N",
+//   cal: "",
+//   training_days: 0,
+//   training_days_consumed: 0,
+//   post_training_days: 0,
+//   post_training_days_consumed: 0,
+//   fs_generation_contract: 0,
+//   fs_generation_consumed: 0,
+//   with_sma: "N",
+//   active: "N",
+// });
+
+const [clientcontracts, setClientContracts] = useState({});
 
 
 
-  // const FinancialsModules = [
-  //   "General Ledger",
-  //   "Accounts Payable",
-  //   "Sales",
-  //   "Accounts Receivable",
-  //   "Purchasing",
-  //   "FG Inventory",
-  //   "MS Inventory",
-  //   "RM Inventory",
-  //   "VE Inventory",
-  // ];
+  // const [toggles, setToggles] = useState({
+  //   cas: false,
+  //   live: false,
+  //   with_sma: false,
+  //   fs_live: false,
+  //   active: false
+  // });
 
-  // const FinancialsOtherModules = [
-  //   "Fixed Assets",
-  //   "Budget",
-  //   "Bank Recon",
-  //   "Production",
-  //   "Importation",
-  //   "Financing",
-  // ];
+  // const [toggles, setToggles] = useState({});
 
-  // const HrpayModules = [
-  //   "HR Management and Payroll",
-  //   "HR Information System",
-  // ];
+const initialToggleStatePerTab = {
+  cas: false,
+  live: false,
+  with_sma: false,
+  fs_live: false,
+  active: false
+};
 
-  // const HrpayOtherModules = [
-  //   "Employee Portal",
-  //   "Employee Portal Cloud",
-  // ];
-  
+const [toggles, setToggles] = useState({
+  financials: { ...initialToggleStatePerTab },
+  hr: { ...initialToggleStatePerTab },
+  // add other tabs as needed
+});
+
 
 
   const technicians = [
@@ -303,20 +294,12 @@ const removeTechnicianInput = (index) => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  
-  // When initializing from existing data
-// useEffect(() => {
-//   if (location.state) {
-//     setClient(location.state);
-//     setIsViewMode(true);
-//     fetchClientData(location.state.client_code)
-//       .then(data => {
-//         if (data) {
-//           setSelectedModules(data.modules?.map(m => m.module_name) || []);
-//         }
-//       });
-//   }
-// }, [location.state]);
+  useEffect(() => {
+  if (clientcontracts.length > 0) {
+    console.log('Ready to display:', clientcontracts);
+  }
+}, [clientcontracts]);
+
 
 useEffect(() => {
   if (location.state) {
@@ -345,17 +328,37 @@ useEffect(() => {
   }, [client.client_code]);
 
   // Update toggles when client data changes
-  useEffect(() => {
-  if (client) {
-    setToggles({
-      cas: client.cas === "Y",
-      live: client.live === "Y",
-      with_sma: client.with_sma === "Y",
-      fs_live: client.fs_live === "Y",
-      active: client.active === "Y"
-    });
+//   useEffect(() => {
+//   if (client) {
+//     setToggles({
+//       cas: client.cas === "Y",
+//       live: client.live === "Y",
+//       with_sma: client.with_sma === "Y",
+//       fs_live: client.fs_live === "Y",
+//       active: client.active === "Y"
+//     });
+//   }
+// }, [client]);
+
+useEffect(() => {
+  if (clientcontracts.length && activeTopTab) {
+    const contractForTab = clientcontracts.find(c => c.app_type === activeTopTab) || {};
+
+    setToggles(prev => ({
+  ...prev,
+  [activeTopTab]: {
+    live: contractForAppType.live === "Y",
+    with_sma: contractForAppType.with_sma === "Y",
+    active: contractForAppType.active === "Y",
+    fs_live: contractForAppType.fs_live === "Y",
+    cas: contractForAppType.cas === "Y"
   }
-}, [client]);
+}));
+
+  }
+}, [activeTopTab, clientcontracts]);
+
+
 
   const fetchClientFiles = async () => {
     try {
@@ -414,7 +417,7 @@ useEffect(() => {
         'Accept': 'application/json'
       };
 
-      const response = await fetch(`${apiBase}/load-client-data?client_code=${clientCode}`, { headers });
+      const response = await fetch(`${apiBase}/load-client-data?client_code=${clientCode}&app_type=${activeTopTab}`,{ headers });
       
       if (!response.ok) {
         const errorText = await response.text();
@@ -430,14 +433,6 @@ useEffect(() => {
         throw new Error(data.error || 'API request failed');
       }
 
-      // Process technicians data
-      // const receivedTechnicians = data.technicians || [];
-      // const technicianDisplayNames = receivedTechnicians.map(tech => {
-      //   const name = Object.entries(technicianCodeMap).find(([_, c]) => c === tech.tech_code)?.[0] || tech.tech_code;
-      //   return `${name} (${tech.tech_code})`;
-      // });
-
-      
       const receivedTechnicians = data.technicians || [];
 
       const filteredTechnicians = receivedTechnicians.filter(t => t.app_type === activeTopTab);
@@ -447,49 +442,73 @@ useEffect(() => {
         return `${name} (${tech.tech_code})`;
       });
 
-      // setTechnicianInputs(technicianDisplayNames);
+
+        const clientData = data.clients || {};
+        
+        const contracts = Array.isArray(data.client_contract)
+          ? data.client_contract
+          : data.client_contract
+            ? [data.client_contract]
+            : [];
+
+        // ✅ Filter by current app type// After filtering contracts by activeTopTab
+        const contractsForAppType = contracts.filter(c => c.app_type === activeTopTab);
+        const contractForAppType = contractsForAppType.length > 0 ? contractsForAppType[0] : {};
+
+        // Set clientcontracts as a single object, not an array
+        setClientContracts(contractForAppType);
+      //   setClientContracts(prev => ({
+      //   ...prev,
+      //   [activeTopTab]: contractForAppType
+      // }));
 
 
 
+        const transformedClient = {
+          client_code: clientData.client_code || '',
+          client_name: clientData.client_name || '',
+          main_address: clientData.main_address || '',
+          industry: clientData.industry || '',
+          remote_id: clientData.remote_id || '',
+          remote_pw: clientData.remote_pw || '',
+          server_pw: clientData.server_pw || '',
+          helpdesk: clientData.helpdesk || '',
 
-      // Transform and normalize client data
-      const clientData = data.clients || {};
-      const transformedClient = {
-        client_code: clientData.client_code || '',
-        client_name: clientData.client_name || '',
-        main_address: clientData.main_address || '',
-        contract_date: clientData.contract_date || '',
-        cas: clientData.cas || 'N',
-        live: clientData.live || 'N',
-        sma_days: clientData.sma_days || '',
-        fs_live: clientData.fs_live || 'N',
-        cal: clientData.cal || clientData.numberOfUsers || '', // Map numberOfUsers to cal
-        industry: clientData.industry || '',
-        training_days: Number(clientData.training_days) || 0,
-        training_days_consumed: Number(clientData.training_days_consumed) || 0,
-        post_training_days: Number(clientData.post_training_days) || 0,
-        post_training_days_consumed: Number(clientData.post_training_days_consumed) || 0,
-        fs_generation_contract: Number(clientData.fs_generation_contract) || 0,
-        fs_generation_consumed: Number(clientData.fs_generation_consumed) || 0,
-        remote_id: clientData.remote_id || '',
-        remote_pw: clientData.remote_pw || '',
-        server_pw: clientData.server_pw || '',
-        helpdesk: clientData.helpdesk || '',
-        with_sma: clientData.with_sma || 'N',
-        active: clientData.active || 'N'
-      };
+          // Optional: Move contract details by app_type
+        client_contract: contractsForAppType.map(c => ({
+            app_type: c.app_type,
+            training_days: Number(c.training_days) || 0,
+            training_days_consumed: Number(c.training_days_consumed) || 0,
+            post_training_days: Number(c.post_training_days) || 0,
+            post_training_days_consumed: Number(c.post_training_days_consumed) || 0,
+            fs_generation_contract: Number(c.fs_generation_contract) || 0,
+            fs_generation_consumed: Number(c.fs_generation_consumed) || 0,
+            numberOfUsers: c.numberOfUsers || 0,
+            numberOfEmployees: c.numberOfEmployees || 0,
+            contract_date: c.contract_date || '',
+            cas: c.cas || 'N',
+            live: c.live || 'N',
+            with_sma: c.with_sma || 'N',
+            fs_live: c.fs_live || 'N',
+            active: c.active || 'N',
+            sma_days: Number(c.sma_days) || 0,
+          }))
+        };
 
-      console.log('Transformed client data:', transformedClient);
+        setToggles(prev => ({
+          ...prev,
+          [activeTopTab]: {
+            cas: contractForAppType.cas === "Y",
+            fs_live: contractForAppType.fs_live === "Y",
+            live: contractForAppType.live === "Y",
+            with_sma: contractForAppType.with_sma === "Y",
+            active: contractForAppType.active === "Y"
+          }
+        }));
 
-      // // Update state
-      // setClient(transformedClient);
-      // setTabTechnicians([...technicianDisplayNames, ""]);
-      // setSelectedTechnicians(technicianDisplayNames);
-      // setClientTechnicians(receivedTechnicians.map(t => t.tech_code));
-      // setApplications(data.applications || []);
-      // setSelectedModules(data.modules?.map(m => m.module_name) || []);
-      // Update state
           setClient(transformedClient);
+          // setClientContracts(contractsForAppType);  // ✅ Only contracts matching activeTopTab
+
 
           // Set technicians per tab
           setTabTechnicians(prev => ({
@@ -530,33 +549,125 @@ useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // const handleTechnicianChange = (index, value) => {
-  //   const newInputs = [...technicianInputs];
-  //   newInputs[index] = value;
-  //   setTabTechnicians(newInputs);
-  //   setSelectedTechnicians(newInputs.filter(t => t !== ""));
-  // };
 
-  // const addTechnicianInput = () => {
-  //   if (technicianInputs[technicianInputs.length - 1] !== "") {
-  //     setTabTechnicians([...technicianInputs, ""]);
-  //   }
-  // };
+//   const handleToggle = (key) => {
+//   const newValue = !toggles[key];
+//   setToggles(prev => ({ ...prev, [key]: newValue }));
+//   setClient(prev => ({ ...prev, [key]: newValue ? "Y" : "N" }));
+// };
 
-  // const removeTechnicianInput = (index) => {
-  //   if (technicianInputs.length > 1) {
-  //     const newInputs = [...technicianInputs];
-  //     newInputs.splice(index, 1);
-  //     setTabTechnicians(newInputs);
-  //     setSelectedTechnicians(newInputs.filter(t => t !== ""));
-  //   }
-  // };
+// const handleToggle = (key) => {
+//   setToggles(prev => {
+//     const prevForTab = prev[activeTopTab] || {};
+//     const newValue = !prevForTab[key];
 
-  const handleToggle = (key) => {
-  const newValue = !toggles[key];
-  setToggles(prev => ({ ...prev, [key]: newValue }));
-  setClient(prev => ({ ...prev, [key]: newValue ? "Y" : "N" }));
+//     return {
+//       ...prev,
+//       [activeTopTab]: {
+//         ...prevForTab,
+//         [key]: newValue,
+//       }
+//     };
+//   });
+
+//   // Also update clientcontracts for the activeTopTab (toggle saved in contract)
+//   setClientContracts(prev => ({
+//     ...prev,
+//     [key]: !prev[key] ? "Y" : "N"
+//   }));
+// };
+
+const defaultToggleState = {
+  cas: false,
+  live: false,
+  with_sma: false,
+  fs_live: false,
+  active: false,
 };
+const initialToggleState = {
+  cas: false,
+  live: false,
+  with_sma: false,
+  fs_live: false,
+  active: false,
+};
+
+const handleToggle = (key) => {
+  setToggles(prev => {
+    // Current toggles for active tab, fallback to defaults if missing
+    const currentTabToggles = prev[activeTopTab] || { ...initialToggleState };
+
+    console.log('Before toggle:', currentTabToggles);
+
+    // Toggle only the clicked key
+    const newValue = !currentTabToggles[key];
+
+    const updatedTabToggles = {
+      ...currentTabToggles,
+      [key]: newValue,
+    };
+
+    console.log('After toggle:', updatedTabToggles);
+
+    return {
+      ...prev,
+      [activeTopTab]: updatedTabToggles,
+    };
+  });
+
+  setClientContracts(prev => {
+    const currentContract = prev[activeTopTab] || {
+      app_type: activeTopTab,
+      cas: "N",
+      live: "N",
+      with_sma: "N",
+      fs_live: "N",
+      active: "N",
+      training_days: 0,
+      training_days_consumed: 0,
+      post_training_days: 0,
+      post_training_days_consumed: 0,
+      fs_generation_contract: 0,
+      fs_generation_consumed: 0,
+      numberOfUsers: 0,
+      numberOfEmployees: 0,
+      contract_date: '',
+      sma_days: 0
+    };
+
+    const updatedContract = {
+      ...currentContract,
+      [key]: currentContract[key] === "Y" ? "N" : "Y"
+    };
+
+    return {
+      ...prev,
+      [activeTopTab]: updatedContract,
+    };
+  });
+};
+
+
+
+
+useEffect(() => {
+  if (clientcontracts[activeTopTab]) {
+    const contract = clientcontracts[activeTopTab];
+    setToggles(prev => ({
+      ...prev,
+      [activeTopTab]: {
+        live: contract.live === "Y",
+        with_sma: contract.with_sma === "Y",
+        active: contract.active === "Y",
+        fs_live: contract.fs_live === "Y",
+        cas: contract.cas === "Y"
+      }
+    }));
+  }
+}, [clientcontracts, activeTopTab]);
+
+
+
 
   const toggleSelection = (item, list, setList) => {
     setList(prev => prev.includes(item) 
@@ -829,10 +940,44 @@ const handleDeleteFile = async (file) => {
     }
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
+  // const handleChange = (e) => {
+  //   const { name, value } = e.target;
+  //   setClient(prev => ({ ...prev, [name]: value }));
+  // };
+
+const handleChange = (e) => {
+  const { name, value } = e.target;
+  console.log(`handleChange: ${name} = ${value}`);
+
+  if ([
+    'training_days',
+    'training_days_consumed',
+    'post_training_days',
+    'post_training_days_consumed',
+    'fs_generation_contract',
+    'fs_generation_consumed',
+    'numberOfUsers',
+    'numberOfEmployees',
+    'contract_date',
+    'cas',
+    'live',
+    'with_sma',
+    'fs_live',
+    'active',
+    'sma_days'
+  ].includes(name)) {
+    setClientContracts(prev => ({
+      ...prev,
+      [name]: name.includes('days') || name.includes('number') ? Number(value) : value
+    }));
+  } else {
     setClient(prev => ({ ...prev, [name]: value }));
-  };
+  }
+};
+
+
+
+
 
   const handlePassword = async (e) => {
   const { name, value } = e.target;
@@ -851,6 +996,27 @@ const handleDeleteFile = async (file) => {
     }));
   }
 };
+
+const syncTogglesToContracts = () => {
+  setClientContracts(prev => {
+    const updated = { ...prev };
+    const currentToggles = toggles[activeTopTab] || {};
+
+    const contract = updated[activeTopTab] || {};
+    const newContract = {
+      ...contract,
+      cas: currentToggles.cas ? "Y" : "N",
+      live: currentToggles.live ? "Y" : "N",
+      with_sma: currentToggles.with_sma ? "Y" : "N",
+      fs_live: currentToggles.fs_live ? "Y" : "N",
+      active: currentToggles.active ? "Y" : "N"
+    };
+
+    updated[activeTopTab] = newContract;
+    return updated;
+  });
+};
+
 
   const handleSave = async () => {
   const moduleCodeMap = {
@@ -890,12 +1056,6 @@ const handleDeleteFile = async (file) => {
   try {
     setIsSaving(true);
 
-    // const technicianCodes = selectedTechnicians.map(tech => {
-    //   const matches = tech.match(/\(([^)]+)\)/);
-    //   return matches ? matches[1] : tech;
-    // });
-
-
     // Get technician inputs for current tab, filtering empty strings
     const techniciansToSave = (tabTechnicians[activeTopTab] || []).filter(t => t !== "");
 
@@ -905,7 +1065,6 @@ const handleDeleteFile = async (file) => {
         technicians
           .filter(t => t !== "") // remove empty inputs
           .map(t => {
-            // Extract tech_code from string like "Name (code)"
             const matches = t.match(/\(([^)]+)\)/);
             const tech_code = matches ? matches[1] : t;
             return {
@@ -916,31 +1075,79 @@ const handleDeleteFile = async (file) => {
     );
 
     const allSelectedModules = Object.values(tabModules).flat();
-  //   const clientModulesPayload = allSelectedModules.map(moduleName => ({
+
+  // const selectedModulesForActiveTab = tabModules[activeTopTab] || [];
+  // const allowedModules = tabMainModules[activeTopTab] || [];
+  // const filteredModules = selectedModulesForActiveTab.filter(module =>
+  //   allowedModules.includes(module)
+  // );
+
+  // const clientModulesPayload = filteredModules.map(moduleName => ({
   //   module_name: moduleName,
   //   module_code: moduleCodeMap[moduleName] || null,
-  //   module_type: activeTopTab, // 👈 include the current tab here
+  //   module_type: activeTopTab,
   // }));
 
-//   const clientModulesPayload = Object.entries(tabModules).flatMap(([moduleType, moduleNames]) =>
-//   moduleNames.map(moduleName => ({
-//     module_name: moduleName,
-//     module_code: moduleCodeMap[moduleName] || null,
-//     module_type: moduleType, // correct module type here
-//   }))
-// ); 
-
   const selectedModulesForActiveTab = tabModules[activeTopTab] || [];
-  const allowedModules = tabMainModules[activeTopTab] || [];
-  const filteredModules = selectedModulesForActiveTab.filter(module =>
-    allowedModules.includes(module)
-  );
 
-  const clientModulesPayload = filteredModules.map(moduleName => ({
+  const clientModulesPayload = selectedModulesForActiveTab.map(moduleName => ({
     module_name: moduleName,
     module_code: moduleCodeMap[moduleName] || null,
     module_type: activeTopTab,
   }));
+
+
+// Find the contract entry for the current active tab (app_type)
+// const contract = (client.client_contract || []).find(c => c.app_type === activeTopTab) || {};
+
+// const togglesToContract = {
+//   cas: toggles.cas ? "Y" : "N",
+//   live: toggles.live ? "Y" : "N",
+//   with_sma: toggles.with_sma ? "Y" : "N",
+//   fs_live: toggles.fs_live ? "Y" : "N",
+//   active: toggles.active ? "Y" : "N"
+// };
+const togglesToContract = mapTogglesToYN(toggles[activeTopTab] || {});
+
+const clientContractPayload = [{
+  app_type: activeTopTab,
+  training_days: Number(clientcontracts.training_days) || 0,
+  training_days_consumed: Number(clientcontracts.training_days_consumed) || 0,
+  post_training_days: Number(clientcontracts.post_training_days) || 0,
+  post_training_days_consumed: Number(clientcontracts.post_training_days_consumed) || 0,
+  fs_generation_contract: Number(clientcontracts.fs_generation_contract) || 0,
+  fs_generation_consumed: Number(clientcontracts.fs_generation_consumed) || 0,
+  numberOfUsers: Number(clientcontracts.numberOfUsers) || 0,
+  numberOfEmployees: Number(clientcontracts.numberOfEmployees) || 0,
+  contract_date: clientcontracts.contract_date || '',
+  cas: togglesToContract.cas,
+  live: togglesToContract.live,
+  with_sma: togglesToContract.with_sma,
+  fs_live: togglesToContract.fs_live,
+  active: togglesToContract.active,
+  sma_days: Number(clientcontracts.sma_days) || 0
+}];
+
+
+// const clientContractPayload = [{
+//   app_type: activeTopTab,
+//   training_days: Number(clientcontracts.training_days) || 0,
+//   training_days_consumed: Number(clientcontracts.training_days_consumed) || 0,
+//   post_training_days: Number(clientcontracts.post_training_days) || 0,
+//   post_training_days_consumed: Number(clientcontracts.post_training_days_consumed) || 0,
+//   fs_generation_contract: Number(clientcontracts.fs_generation_contract) || 0,
+//   fs_generation_consumed: Number(clientcontracts.fs_generation_consumed) || 0,
+//   numberOfUsers: Number(clientcontracts.numberOfUsers) || 0,
+//   numberOfEmployees: Number(clientcontracts.numberOfEmployees) || 0,
+//   contract_date: clientcontracts.contract_date || '',
+//   cas: clientcontracts.cas || 'N',
+//   live: clientcontracts.live || 'N',
+//   with_sma: clientcontracts.with_sma || 'N',
+//   fs_live: clientcontracts.fs_live || 'N',
+//   active: clientcontracts.active || 'N',
+//   sma_days: Number(clientcontracts.sma_days) || 0
+// }];
+
 
 
 
@@ -958,32 +1165,28 @@ const handleDeleteFile = async (file) => {
           client_code: client.client_code,
           client_name: client.client_name,
           main_address: client.main_address,
-          contract_date: client.contract_date,
+          // contract_date: client.contract_date,
           industry: client.industry,
           remote_id: client.remote_id,
           remote_pw: client.remote_pw,
           server_pw: client.server_pw,
-          cas: client.cas,
-          live: client.live,
-          with_sma: client.with_sma,
-          fs_live: client.fs_live,
-          active: client.active,
-          cal: client.cal,
-          sma_days: client.sma_days,
-          training_days: client.training_days,
-          training_days_consumed: client.training_days_consumed ?? 0,
-          post_training_days: client.post_training_days,
-          post_training_days_consumed: client.post_training_days_consumed ?? 0,
-          fs_generation_consumed: client.fs_generation_consumed ?? 0,
+          // cas: client.cas,
+          // live: client.live,
+          // with_sma: client.with_sma,
+          // fs_live: client.fs_live,
+          // active: client.active,
+          // cal: client.cal,
+          // sma_days: client.sma_days,
+          // training_days: client.training_days,
+          // training_days_consumed: client.training_days_consumed ?? 0,
+          // post_training_days: client.post_training_days,
+          // post_training_days_consumed: client.post_training_days_consumed ?? 0,
+          // fs_generation_consumed: client.fs_generation_consumed ?? 0,
           contact_persons: client.contact_persons,
-          helpdesk: client.helpdesk,
-          // client_modules: selectedModules.map(module => ({
-          //   module_name: module,
-          //   module_code: moduleCodeMap[module] 
-          // })),       
+          helpdesk: client.helpdesk,  
           client_modules: clientModulesPayload,
-          // client_technicals: technicianCodes.map(code => ({ tech_code: code }))
           client_technicals: clientTechnicalsPayload,
+          client_contract: clientContractPayload,
         }
       })
     };
@@ -1198,26 +1401,57 @@ const handleDeleteFile = async (file) => {
 
   {/* Financials Content */}
   {activeTopTab === "FINANCIALS" && (
-  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 p-6 gap-4 text-sm">
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 p-6 gap-2 text-sm">
 
     
     {/* Number of Users */}
 
-    <div>
+    {/* <div>
       <label className="block font-semibold text-gray-800 mb-2">
         No. of Users
       </label>
-      <div className="flex gap-3">
+      
+      <div className="flex gap-2">
         <div>
           <input
             type="number"
             placeholder="Count"
-            name="cal"
-            value={client.cal || 0}
+            name="numberOfUsers"
+            value={clientcontracts.numberOfUsers ?? ''}
             onChange={handleChange}
             className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
           />
           <p className="text-sm text-gray-500 mt-1 text-center">Count</p>
+        </div>
+      </div>
+    </div> */}
+
+    <div>
+      <label className="block font-semibold text-gray-800 mb-2">
+        Contract Details
+      </label>
+      <div className="flex gap-2">
+        <div>
+          <input
+            type="date"
+            placeholder="15"
+            name="contract_date"
+            value={clientcontracts.contract_date ?? ''}
+            onChange={handleChange}
+            className="p-2 border border-gray-300 rounded text-left h-[40px] w-[130px]"
+          />
+          <p className="text-sm text-gray-500 mt-1 text-center">Contract Date</p>
+        </div>
+        <div>
+          <input
+            type="number"
+            placeholder="Users Cal"
+            name="numberOfUsers"
+            value={clientcontracts.numberOfUsers ?? ''}
+            onChange={handleChange}
+            className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
+          />
+          <p className="text-sm text-gray-500 mt-1 text-center">User CAL</p>
         </div>
       </div>
     </div>
@@ -1226,13 +1460,13 @@ const handleDeleteFile = async (file) => {
       <label className="block font-semibold text-gray-800 mb-2">
         Training Man Days
       </label>
-      <div className="flex gap-3">
+      <div className="flex gap-2">
         <div>
           <input
             type="number"
             placeholder="15"
             name="training_days"
-            value={client.training_days || 0}
+            value={clientcontracts.training_days ?? ''}
             onChange={handleChange}
             className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
           />
@@ -1242,7 +1476,7 @@ const handleDeleteFile = async (file) => {
           <input
             type="number"
             name="training_days_consumed"
-            value={client.training_days_consumed || 0}
+            value={clientcontracts.training_days_consumed ?? ''}
             onChange={handleChange}
             className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
           />
@@ -1256,13 +1490,14 @@ const handleDeleteFile = async (file) => {
               <label className="block font-semibold text-gray-800 mb-2">
                 Post-Training Man Days
               </label>
-              <div className="flex gap-3">
+              <div className="flex gap-2">
                 <div>
                   <input
                     type="number"
                     placeholder="15"
                     name="post_training_days"
-                    value={client.post_training_days || 0}
+                    // value={(clientcontracts[0]?.post_training_days) || 0}
+                    value={clientcontracts.post_training_days ?? ''}
                     onChange={handleChange}
                     className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
                   />
@@ -1273,7 +1508,8 @@ const handleDeleteFile = async (file) => {
                     type="number"
                     placeholder="15"
                     name="post_training_days_consumed"
-                    value={client.post_training_days_consumed || 0}
+                    // value={(clientcontracts[0]?.post_training_days_consumed) || 0}
+                    value={clientcontracts.post_training_days_consumed ?? ''}
                     onChange={handleChange}
                     className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
                   />
@@ -1286,13 +1522,14 @@ const handleDeleteFile = async (file) => {
                 <label className="block font-semibold text-gray-800 mb-2">
                   FS Generation
                 </label>
-                <div className="flex gap-3">
+                <div className="flex gap-2">
                   <div>
                     <input
                       type="number"
                       placeholder="15"
                       name="fs_generation_contract"
-                      value={client.fs_generation_contract || 0}
+                      // value={(clientcontracts[0]?.fs_generation_contract) || 0}
+                      value={clientcontracts.fs_generation_contract ?? ''}
                       onChange={handleChange}
                       className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
                     />
@@ -1303,7 +1540,8 @@ const handleDeleteFile = async (file) => {
                       type="number"
                       placeholder="15"
                       name="fs_generation_consumed"
-                      value={client.fs_generation_consumed || 0}
+                      // value={(clientcontracts[0]?.fs_generation_consumed) || 0}
+                      value={clientcontracts.fs_generation_consumed ?? ''}
                       onChange={handleChange}
                       className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
                     />
@@ -1316,34 +1554,27 @@ const handleDeleteFile = async (file) => {
             <div className="grid grid-cols-1 items-start gap-3 lg:gap-6 ">
               
               <div className="flex items-center mt-4 gap-3 lg:gap-6">
-                {[
-                { key: "cas", label: "CAS" },
-                { key: "live", label: "LIVE" },
-                { key: "with_sma", label: "SMA" },
-                { key: "fs_live", label: "FS LIVE" },
-                { key: "active", label: "ACTIVE" },
-              ].map(({ key, label }) => (
+
+                {["cas", "live", "with_sma", "fs_live", "active"].map(key => (
                 <div key={key} className="flex flex-col items-center text-center">
-                  <span className="text-gray-700 text-sm whitespace-nowrap">{label}</span>
+                  <span className="text-gray-700 text-sm whitespace-nowrap">{key.toUpperCase()}</span>
                   <button
                     className={`w-12 h-6 flex items-center rounded-full p-1 ${
-                      toggles[key] ? "bg-blue-500" : "bg-gray-300"
+                      toggles[activeTopTab]?.[key] ? "bg-blue-500" : "bg-gray-300"
                     }`}
                     onClick={() => handleToggle(key)}
                   >
                     <div
                       className={`w-4 h-4 bg-white rounded-full transform transition-transform ${
-                        toggles[key] ? "translate-x-6" : ""
+                        toggles[activeTopTab]?.[key] ? "translate-x-6" : ""
                       }`}
-                    ></div>
+                    />
                   </button>
                 </div>
-              ))}
-
-
- 
+                ))}
 
               </div>
+
             </div>
 
           </div>
@@ -1364,13 +1595,13 @@ const handleDeleteFile = async (file) => {
       <label className="block font-semibold text-gray-800 mb-2">
         No. of Users / Employees
       </label>
-      <div className="flex gap-3">
+      <div className="flex gap-2">
         <div>
           <input
             type="number"
             placeholder="Count"
-            name="cal"
-            value={client.cal || 0}
+            name="numberOfUsers"
+            value={clientcontracts.numberOfUsers ?? ''}
             onChange={handleChange}
             className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
           />
@@ -1379,8 +1610,8 @@ const handleDeleteFile = async (file) => {
         <div>
           <input
             type="number"
-            name="cal"
-            value={client.cal || 0}
+            name="numberOfEmployees"
+            value={clientcontracts.numberOfEmployees ?? ''}
             onChange={handleChange}
             className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
           />
@@ -1394,13 +1625,13 @@ const handleDeleteFile = async (file) => {
       <label className="block font-semibold text-gray-800 mb-2">
         Training Man Days
       </label>
-      <div className="flex gap-3">
+      <div className="flex gap-2">
         <div>
           <input
             type="number"
             placeholder="15"
             name="training_days"
-            value={client.training_days || 0}
+            value={clientcontracts.training_days ?? ''}
             onChange={handleChange}
             className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
           />
@@ -1410,7 +1641,7 @@ const handleDeleteFile = async (file) => {
           <input
             type="number"
             name="training_days_consumed"
-            value={client.training_days_consumed || 0}
+            value={clientcontracts.training_days_consumed ?? ''}
             onChange={handleChange}
             className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
           />
@@ -1424,13 +1655,13 @@ const handleDeleteFile = async (file) => {
               <label className="block font-semibold text-gray-800 mb-2">
                 Post-Training Man Days
               </label>
-              <div className="flex gap-3">
+              <div className="flex gap-2">
                 <div>
                   <input
                     type="number"
                     placeholder="15"
                     name="post_training_days"
-                    value={client.post_training_days || 0}
+                    value={clientcontracts.post_training_days ?? ''}
                     onChange={handleChange}
                     className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
                   />
@@ -1441,7 +1672,7 @@ const handleDeleteFile = async (file) => {
                     type="number"
                     placeholder="15"
                     name="post_training_days_consumed"
-                    value={client.post_training_days_consumed || 0}
+                    value={clientcontracts.post_training_days_consumed ?? ''}
                     onChange={handleChange}
                     className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
                   />
@@ -1451,31 +1682,31 @@ const handleDeleteFile = async (file) => {
             </div>
 
           
-            <div className="grid grid-cols-1 items-start gap-3 lg:gap-6">
-            <div className="flex items-center mt-4 gap-3 lg:gap-6">
-              {[
-                { key: "live", label: "LIVE" },
-                { key: "with_sma", label: "SMA" },
-                { key: "active", label: "ACTIVE" },
-              ].map(({ key, label }) => (
+            <div className="grid grid-cols-1 items-start gap-3 lg:gap-6 ">
+              
+              <div className="flex items-center mt-4 gap-3 lg:gap-6">
+
+                {["live", "with_sma", "active"].map(key => (
                 <div key={key} className="flex flex-col items-center text-center">
-                  <span className="text-gray-700 text-sm whitespace-nowrap">{label}</span>
+                  <span className="text-gray-700 text-sm whitespace-nowrap">{key.toUpperCase()}</span>
                   <button
                     className={`w-12 h-6 flex items-center rounded-full p-1 ${
-                      toggles[key] ? "bg-blue-500" : "bg-gray-300"
+                      toggles[activeTopTab]?.[key] ? "bg-blue-500" : "bg-gray-300"
                     }`}
                     onClick={() => handleToggle(key)}
                   >
                     <div
                       className={`w-4 h-4 bg-white rounded-full transform transition-transform ${
-                        toggles[key] ? "translate-x-6" : ""
+                        toggles[activeTopTab]?.[key] ? "translate-x-6" : ""
                       }`}
-                    ></div>
+                    />
                   </button>
                 </div>
-              ))}
+                ))}
+
+              </div>
+
             </div>
-          </div>
 
 
           </div>
@@ -1495,17 +1726,17 @@ const handleDeleteFile = async (file) => {
       <label className="block font-semibold text-gray-800 mb-2">
         No. of Users
       </label>
-      <div className="flex gap-3">
-        <div>
+      <div className="flex gap-2">
+       <div>
           <input
             type="number"
             placeholder="Count"
-            name="cal"
-            value={client.cal || 0}
+            name="numberOfUsers"
+            value={clientcontracts.numberOfUsers ?? ''}
             onChange={handleChange}
             className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
           />
-          <p className="text-sm text-gray-500 mt-1 text-center">Count</p>
+          <p className="text-sm text-gray-500 mt-1 text-center">Users</p>
         </div>
       </div>
     </div>
@@ -1514,13 +1745,13 @@ const handleDeleteFile = async (file) => {
       <label className="block font-semibold text-gray-800 mb-2">
         Training Man Days
       </label>
-      <div className="flex gap-3">
+      <div className="flex gap-2">
         <div>
           <input
             type="number"
             placeholder="15"
             name="training_days"
-            value={client.training_days || 0}
+            value={clientcontracts.training_days ?? ''}
             onChange={handleChange}
             className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
           />
@@ -1530,7 +1761,7 @@ const handleDeleteFile = async (file) => {
           <input
             type="number"
             name="training_days_consumed"
-            value={client.training_days_consumed || 0}
+            value={clientcontracts.training_days_consumed ?? ''}
             onChange={handleChange}
             className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
           />
@@ -1544,13 +1775,13 @@ const handleDeleteFile = async (file) => {
               <label className="block font-semibold text-gray-800 mb-2">
                 Post-Training Man Days
               </label>
-              <div className="flex gap-3">
+              <div className="flex gap-2">
                 <div>
                   <input
                     type="number"
                     placeholder="15"
                     name="post_training_days"
-                    value={client.post_training_days || 0}
+                    value={clientcontracts.post_training_days ?? ''}
                     onChange={handleChange}
                     className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
                   />
@@ -1561,7 +1792,7 @@ const handleDeleteFile = async (file) => {
                     type="number"
                     placeholder="15"
                     name="post_training_days_consumed"
-                    value={client.post_training_days_consumed || 0}
+                    value={clientcontracts.post_training_days_consumed ?? ''}
                     onChange={handleChange}
                     className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
                   />
@@ -1571,31 +1802,31 @@ const handleDeleteFile = async (file) => {
             </div>
 
           
-            <div className="grid grid-cols-1 items-start gap-3 lg:gap-6">
-            <div className="flex items-center mt-4 gap-3 lg:gap-6">
-              {[
-                { key: "live", label: "LIVE" },
-                { key: "with_sma", label: "SMA" },
-                { key: "active", label: "ACTIVE" },
-              ].map(({ key, label }) => (
+            <div className="grid grid-cols-1 items-start gap-3 lg:gap-6 ">
+              
+              <div className="flex items-center mt-4 gap-3 lg:gap-6">
+
+                {["live", "with_sma", "active"].map(key => (
                 <div key={key} className="flex flex-col items-center text-center">
-                  <span className="text-gray-700 text-sm whitespace-nowrap">{label}</span>
+                  <span className="text-gray-700 text-sm whitespace-nowrap">{key.toUpperCase()}</span>
                   <button
                     className={`w-12 h-6 flex items-center rounded-full p-1 ${
-                      toggles[key] ? "bg-blue-500" : "bg-gray-300"
+                      toggles[activeTopTab]?.[key] ? "bg-blue-500" : "bg-gray-300"
                     }`}
                     onClick={() => handleToggle(key)}
                   >
                     <div
                       className={`w-4 h-4 bg-white rounded-full transform transition-transform ${
-                        toggles[key] ? "translate-x-6" : ""
+                        toggles[activeTopTab]?.[key] ? "translate-x-6" : ""
                       }`}
-                    ></div>
+                    />
                   </button>
                 </div>
-              ))}
+                ))}
+
+              </div>
+
             </div>
-          </div>
 
 
           </div>
@@ -1615,13 +1846,13 @@ const handleDeleteFile = async (file) => {
       <label className="block font-semibold text-gray-800 mb-2">
         No. of Users
       </label>
-      <div className="flex gap-3">
+      <div className="flex gap-2">
         <div>
           <input
             type="number"
             placeholder="Count"
-            name="cal"
-            value={client.cal || 0}
+            name="numberOfUsers"
+            value={clientcontracts.numberOfUsers ?? ''}
             onChange={handleChange}
             className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
           />
@@ -1634,13 +1865,13 @@ const handleDeleteFile = async (file) => {
       <label className="block font-semibold text-gray-800 mb-2">
         Training Man Days
       </label>
-      <div className="flex gap-3">
+      <div className="flex gap-2">
         <div>
           <input
             type="number"
             placeholder="15"
             name="training_days"
-            value={client.training_days || 0}
+            value={clientcontracts.training_days ?? ''}
             onChange={handleChange}
             className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
           />
@@ -1650,7 +1881,7 @@ const handleDeleteFile = async (file) => {
           <input
             type="number"
             name="training_days_consumed"
-            value={client.training_days_consumed || 0}
+            value={clientcontracts.training_days_consumed ?? ''}
             onChange={handleChange}
             className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
           />
@@ -1664,13 +1895,13 @@ const handleDeleteFile = async (file) => {
               <label className="block font-semibold text-gray-800 mb-2">
                 Post-Training Man Days
               </label>
-              <div className="flex gap-3">
+              <div className="flex gap-2">
                 <div>
                   <input
                     type="number"
                     placeholder="15"
                     name="post_training_days"
-                    value={client.post_training_days || 0}
+                    value={clientcontracts.post_training_days ?? ''}
                     onChange={handleChange}
                     className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
                   />
@@ -1681,7 +1912,7 @@ const handleDeleteFile = async (file) => {
                     type="number"
                     placeholder="15"
                     name="post_training_days_consumed"
-                    value={client.post_training_days_consumed || 0}
+                    value={clientcontracts.post_training_days_consumed ?? ''}
                     onChange={handleChange}
                     className="p-2 border border-gray-300 rounded text-right h-[40px] w-[70px]"
                   />
@@ -1691,31 +1922,31 @@ const handleDeleteFile = async (file) => {
             </div>
 
           
-            <div className="grid grid-cols-1 items-start gap-3 lg:gap-6">
-            <div className="flex items-center mt-4 gap-3 lg:gap-6">
-              {[
-                { key: "live", label: "LIVE" },
-                { key: "with_sma", label: "SMA" },
-                { key: "active", label: "ACTIVE" },
-              ].map(({ key, label }) => (
+            <div className="grid grid-cols-1 items-start gap-3 lg:gap-6 ">
+              
+              <div className="flex items-center mt-4 gap-3 lg:gap-6">
+
+                {["live", "with_sma", "active"].map(key => (
                 <div key={key} className="flex flex-col items-center text-center">
-                  <span className="text-gray-700 text-sm whitespace-nowrap">{label}</span>
+                  <span className="text-gray-700 text-sm whitespace-nowrap">{key.toUpperCase()}</span>
                   <button
                     className={`w-12 h-6 flex items-center rounded-full p-1 ${
-                      toggles[key] ? "bg-blue-500" : "bg-gray-300"
+                      toggles[activeTopTab]?.[key] ? "bg-blue-500" : "bg-gray-300"
                     }`}
                     onClick={() => handleToggle(key)}
                   >
                     <div
                       className={`w-4 h-4 bg-white rounded-full transform transition-transform ${
-                        toggles[key] ? "translate-x-6" : ""
+                        toggles[activeTopTab]?.[key] ? "translate-x-6" : ""
                       }`}
-                    ></div>
+                    />
                   </button>
                 </div>
-              ))}
+                ))}
+
+              </div>
+
             </div>
-          </div>
 
 
           </div>
@@ -2093,13 +2324,6 @@ const handleDeleteFile = async (file) => {
         {/* SMA Information Tab */}
         {activeTab === "SMA Information" && (
           <div>
-            {/* <div 
-              className="flex items-center space-x-2 mb-8 mt-4" 
-              onClick={() => handleAddFileClick('smaInformation')}
-            >
-              <FaPlus className="text-blue-500 cursor-pointer" />
-              <span className="font-semibold text-gray-700 cursor-pointer">Add New File</span>
-            </div> */}
             <div className="p-2 text-right cursor-pointer" onClick={() => handleAddFileClick('smaInformation')}>
               <span className="inline-flex items-center space-x-2">
                 <FaPlus className="text-blue-500" />

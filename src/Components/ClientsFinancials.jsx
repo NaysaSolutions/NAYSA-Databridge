@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../Authentication/AuthContext";
 import { GetAPI  } from "../api";
 
-const ClientsInformation = () => {
+const ClientsFinancials = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -60,7 +60,7 @@ const ClientsInformation = () => {
   });
 
   useEffect(() => {
-    fetchClients()
+    fetchClients();
     fetchClientsPerApp();
   }, []);
 
@@ -356,7 +356,132 @@ const ClientsInformation = () => {
 
 
 
-{/*  */}
+
+<div className="flex justify-between items-center mt-6 mb-2">
+    <h2 className="text-2xl font-bold text-gray-800">Clients Information (FINANCIALS)</h2>
+  </div>
+
+  {/* Loading */}
+  {loadingPerApp ? (
+    <p className="text-center text-gray-500">Loading clients...</p>
+  ) : (
+    <div className="bg-white shadow-lg rounded-xl overflow-hidden">
+      <div className="max-h-[70vh] overflow-y-auto">
+        <table className="w-full text-xs text-center">
+          <thead className="bg-gray-200 sticky top-0 z-10">
+            <tr className="bg-blue-700 text-white text-center">
+              {[
+                { key: "client_code", label: "Client Code" },
+                { key: "client_name", label: "Client Name" },
+                { key: "main_address", label: "Main Address" },
+                { key: "contract_date", label: "Contract Date" },
+                { key: "cas", label: "CAS" },
+                { key: "cal", label: "User License" },
+                { key: "training_days", label: "Training Days" },
+                { key: "sma_days", label: "SMA Days" },
+                { key: "post_training_days", label: "Post Training Days" },
+                { key: "live", label: "Live" },
+                { key: "with_sma", label: "With SMA?" },
+                { key: "fs_live", label: "FS Live?" },
+                { key: "action", label: "Action" },
+              ].map(({ key, label }) => (
+                <th
+                  key={key}
+                  className="px-2 py-3 border text-center cursor-pointer select-none"
+                  onClick={() => key !== "action" && requestSort(key)}
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    {label}
+                    {key !== "action" && (
+                      <FontAwesomeIcon icon={getSortIcon(key)} className="text-xs" />
+                    )}
+                  </div>
+                </th>
+              ))}
+            </tr>
+            <tr className="bg-gray-100 sticky top-[40px] z-10">
+              {Object.keys(searchFieldsPerApp).map((key) => (
+                <td key={key} className="px-2 py-2 border">
+                  <input
+                    type="text"
+                    value={searchFieldsPerApp[key]}
+                    onChange={(e) => handleSearchChangePerApp(e, key)}
+                    placeholder="Filter"
+                    className="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300 text-xs"
+                  />
+                </td>
+              ))}
+              <td className="px-2 py-1"></td>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {currentItemsPerApp.map((client, index) => (
+              <tr key={index} className="bg-white hover:bg-blue-50 transition">
+                <td className="px-2 py-2 border text-left text-blue-800">{client.client_code}</td>
+                <td className="px-2 py-2 w-[400px] border text-left">{client.client_name}</td>
+                <td className="px-2 py-2 w-[400px] border text-left">{client.main_address}</td>
+                <td className="px-2 py-2 border">
+                  {new Intl.DateTimeFormat('en-US', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                  }).format(new Date(client.contract_date))}
+                </td>
+                <td className="px-2 py-2 border">{client.cas}</td>
+                <td className="px-2 py-2 border">{client.cal}</td>
+                <td className="px-2 py-2 border">{client.training_days}</td>
+                <td className="px-2 py-2 border">{client.sma_days}</td>
+                <td className="px-2 py-2 border">{client.post_training_days}</td>
+                <td className="px-2 py-2 border">{client.live}</td>
+                <td className="px-2 py-2 border">{client.with_sma}</td>
+                <td className="px-2 py-2 border">{client.fs_live}</td>
+                <td className="px-2 py-2 border">
+                  <button
+                    className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-800 transition"
+                    onClick={() => navigate("/Addclients", { state: client })}
+                  >
+                    View
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Pagination */}
+      <div className="flex justify-between items-center p-4 bg-gray-50 border-t text-sm text-gray-700">
+        <span>
+          Showing {clientsPerApp.length ? (currentPagePerApp - 1) * itemsPerPage + 1 : 0} -{" "}
+          {Math.min(currentPagePerApp * itemsPerPage, clients.length)} of {clients.length}
+        </span>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setCurrentPagePerApp((prev) => Math.max(prev - 1, 1))}
+            disabled={currentPagePerApp === 1}
+            className={`px-3 py-1 rounded-md ${
+              currentPagePerApp === 1
+                ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                : "bg-blue-700 text-white hover:bg-blue-900"
+            }`}
+          >
+            Prev
+          </button>
+          <button
+            onClick={() => setCurrentPagePerApp((prev) => Math.min(prev + 1, totalPagesPerApp))}
+            disabled={currentPagePerApp === totalPagesPerApp}
+            className={`px-3 py-1 rounded-md ${
+              currentPagePerApp === totalPagesPerApp
+                ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                : "bg-blue-700 text-white hover:bg-blue-900"
+            }`}
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    </div>
+  )}
 
 
 </div>
@@ -364,4 +489,4 @@ const ClientsInformation = () => {
   );
 };
 
-export default ClientsInformation;
+export default ClientsFinancials;

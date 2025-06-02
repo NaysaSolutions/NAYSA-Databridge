@@ -106,6 +106,18 @@ const Sidebar = ({
                   // setIsMobileOpen(false); // Close mobile on nav
                 }}
               />
+                {/* <SidebarLink
+                to="/clientsfinancials"
+                icon={faUsers}
+                label="Clients (Financials)"
+                isActive={location.pathname === "/clientsfinancials" && currentSection !== "add-client"}
+                isOpen={isOpen}
+                onClick={() => {
+                  closeAddClientForm();
+                  // setIsMobileOpen(false); // Close mobile on nav
+                }}
+              /> */}
+
               <SidebarLink
                 icon={faAdd}
                 label="Add New Client"
