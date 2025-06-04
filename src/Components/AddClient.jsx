@@ -364,23 +364,43 @@ useEffect(() => {
 //   }
 // }, [client]);
 
+// useEffect(() => {
+//   if (clientcontracts.length && activeTopTab) {
+//     const contractForTab = clientcontracts.find(c => c.app_type === activeTopTab) || {};
+
+//     setToggles(prev => ({
+//   ...prev,
+//   [activeTopTab]: {
+//     live: contractForAppType.live === "Y",
+//     with_sma: contractForAppType.with_sma === "Y",
+//     active: contractForAppType.active === "Y",
+//     fs_live: contractForAppType.fs_live === "Y",
+//     cas: contractForAppType.cas === "Y"
+//   }
+// }));
+
+//   }
+// }, [activeTopTab, clientcontracts]);
+
+const [hasLoadedToggles, setHasLoadedToggles] = useState(false);
+
 useEffect(() => {
-  if (clientcontracts.length && activeTopTab) {
-    const contractForTab = clientcontracts.find(c => c.app_type === activeTopTab) || {};
-
+  if (clientcontracts[activeTopTab] && !hasLoadedToggles) {
+    const contract = clientcontracts[activeTopTab];
     setToggles(prev => ({
-  ...prev,
-  [activeTopTab]: {
-    live: contractForAppType.live === "Y",
-    with_sma: contractForAppType.with_sma === "Y",
-    active: contractForAppType.active === "Y",
-    fs_live: contractForAppType.fs_live === "Y",
-    cas: contractForAppType.cas === "Y"
+      ...prev,
+      [activeTopTab]: {
+        live: contract.live === "Y",
+        with_sma: contract.with_sma === "Y",
+        active: contract.active === "Y",
+        fs_live: contract.fs_live === "Y",
+        cas: contract.cas === "Y"
+      }
+    }));
+    setHasLoadedToggles(true);
   }
-}));
+}, [clientcontracts, activeTopTab]);
 
-  }
-}, [activeTopTab, clientcontracts]);
 
 
 
@@ -499,7 +519,15 @@ useEffect(() => {
 
         // Set clientcontracts as a single object, not an array
         // setClientContracts(contractForAppType);
-        setClientContracts(formattedContractForAppType);
+        // setHasLoadedToggles(false);
+        // setClientContracts(formattedContractForAppType);
+
+        setClientContracts(prev => ({
+  ...prev,
+  [activeTopTab]: formattedContractForAppType
+}));
+
+
       //   setClientContracts(prev => ({
       //   ...prev,
       //   [activeTopTab]: contractForAppType
@@ -703,18 +731,22 @@ const handleToggle = (key) => {
 useEffect(() => {
   if (clientcontracts[activeTopTab]) {
     const contract = clientcontracts[activeTopTab];
+
     setToggles(prev => ({
       ...prev,
       [activeTopTab]: {
+        ...prev[activeTopTab], // <-- preserve previous toggle state
+        cas: contract.cas === "Y",
         live: contract.live === "Y",
         with_sma: contract.with_sma === "Y",
-        active: contract.active === "Y",
         fs_live: contract.fs_live === "Y",
-        cas: contract.cas === "Y"
+        active: contract.active === "Y"
       }
     }));
   }
 }, [clientcontracts, activeTopTab]);
+
+
 
 
 
