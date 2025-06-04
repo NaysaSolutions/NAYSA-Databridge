@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBell, faUser, faSignOutAlt, faSort, faSortUp, faSortDown, faPlus } from "@fortawesome/free-solid-svg-icons";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../Authentication/AuthContext";
-import { GetAPI  } from "../api";
+import { PostAPI  } from "../api";
 
 const ClientsFinancials = () => {
   const { user, logout } = useAuth();
@@ -16,9 +16,7 @@ const ClientsFinancials = () => {
   const [showAddClientForm, setShowAddClientForm] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const itemsPerPage = 15;
-
-  // const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const itemsPerPage = 50;
 
   // Sorting state
   const [sortConfig, setSortConfig] = useState({
@@ -29,16 +27,17 @@ const ClientsFinancials = () => {
   const [searchFields, setSearchFields] = useState({
     client_code: "",
     client_name: "",
-    main_address: "",
     contract_date: "",
+    sma_date: "",
     cas: "",
-    cal: "",
+    live: "",
+    with_sma: "",
+    fs_live: "",
+    active: "",
+    numberOfUsers: "",
     training_days: "",
     sma_days: "",
     post_training_days: "",
-    live: "",
-    with_sma: "",
-    fs_live: ""
   });
 
 
@@ -61,37 +60,23 @@ const ClientsFinancials = () => {
     setFilteredClients(sortedItems);
   }, [sortConfig]);
 
-  // const fetchClients = async () => {
-  //   try {
-  //     const response = await fetch("http://127.0.0.1:8000/api/getClients", {
-  //       headers: { Accept: "application/json" }
-  //     });
-  //     if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-  //     const data = await response.json();
-  //     setClients(data);
-  //     setFilteredClients(data);
-  //     setLoading(false);
-  //   } catch (error) {
-  //     console.error("Error fetching clients:", error);
-  //     setLoading(false);
-  //   }
-  // };
-
-  const fetchClients = async () => {
+const fetchClients = async () => {
   try {
-    const response = await GetAPI("getClients", {}, {
-      Accept: "application/json",
+    const response = await PostAPI("getClientPerApp", {
+      PARAMS: "FINANCIALS" // or whatever string your stored procedure expects
     });
 
-    const data = response.data;
-    setClients(data);
-    setFilteredClients(data);
+    const clientsArray = response.data.data; // ✅ Get the actual array
+    setClients(clientsArray);
+    setFilteredClients(clientsArray);
+
     setLoading(false);
   } catch (error) {
     console.error("Error fetching clients:", error);
     setLoading(false);
   }
 };
+
 
 
 
@@ -133,18 +118,36 @@ const ClientsFinancials = () => {
     navigate("/login");
   };
 
+  if (Array.isArray(filteredClients)) {
   const totalPages = Math.ceil(filteredClients.length / itemsPerPage);
   const currentItems = filteredClients.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
+} else {
+  console.warn("filteredClients is not an array:", filteredClients);
+}
+
 
 
   if (showAddClientForm) return <AddClientForm />;
 
+// Before return (
+const totalPages = Array.isArray(filteredClients)
+  ? Math.ceil(filteredClients.length / itemsPerPage)
+  : 0;
+
+const currentItems = Array.isArray(filteredClients)
+  ? filteredClients.slice(
+      (currentPage - 1) * itemsPerPage,
+      currentPage * itemsPerPage
+    )
+  : [];
+
+
   return (
 
-  <div className="p-2 bg-blue-50 mt-8">
+  <div className="p-2 bg-white mt-8">
   {/* Header */}
   <div className="absolute top-3 right-6 flex items-center gap-4">
     <FontAwesomeIcon icon={faBell} className="w-5 h-5 text-gray-600 hover:text-blue-700 cursor-pointer transition-colors" />
@@ -172,7 +175,7 @@ const ClientsFinancials = () => {
 
   {/* Title and Button */}
   <div className="flex justify-between items-center mt-2 mb-2">
-    <h2 className="text-2xl font-bold text-gray-800">Clients Information</h2>
+    <h2 className="text-2xl font-bold text-gray-800">Clients Information (Financials)</h2>
     <button
       className="bg-blue-700 text-white px-4 py-2 rounded-full hover:bg-blue-900 transition"
       onClick={() => setShowAddClientForm(true)}
@@ -193,16 +196,17 @@ const ClientsFinancials = () => {
               {[
                 { key: "client_code", label: "Client Code" },
                 { key: "client_name", label: "Client Name" },
-                { key: "main_address", label: "Main Address" },
                 { key: "contract_date", label: "Contract Date" },
+                { key: "sma_date", label: "SMA Date" },
                 { key: "cas", label: "CAS" },
-                { key: "cal", label: "User License" },
-                { key: "training_days", label: "Training Days" },
-                { key: "sma_days", label: "SMA Days" },
-                { key: "post_training_days", label: "Post Training Days" },
                 { key: "live", label: "Live" },
                 { key: "with_sma", label: "With SMA?" },
                 { key: "fs_live", label: "FS Live?" },
+                { key: "active", label: "Active" },
+                { key: "numberOfUsers", label: "User License" },
+                { key: "training_days", label: "Training Days" },
+                { key: "sma_days", label: "SMA Days" },
+                { key: "post_training_days", label: "Post Training Days" },
                 { key: "action", label: "Action" },
               ].map(({ key, label }) => (
                 <th
@@ -238,8 +242,7 @@ const ClientsFinancials = () => {
             {currentItems.map((client, index) => (
               <tr key={index} className="bg-white hover:bg-blue-50 transition">
                 <td className="px-2 py-2 border text-left text-blue-800">{client.client_code}</td>
-                <td className="px-2 py-2 w-[400px] border text-left">{client.client_name}</td>
-                <td className="px-2 py-2 w-[400px] border text-left">{client.main_address}</td>
+                <td className="px-2 py-2 w-[300px] border text-left">{client.client_name}</td>
                 <td className="px-2 py-2 border">
                   {new Intl.DateTimeFormat('en-US', {
                     year: 'numeric',
@@ -247,14 +250,22 @@ const ClientsFinancials = () => {
                     day: '2-digit',
                   }).format(new Date(client.contract_date))}
                 </td>
+                <td className="px-2 py-2 border">
+                  {new Intl.DateTimeFormat('en-US', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                  }).format(new Date(client.sma_date))}
+                </td>
                 <td className="px-2 py-2 border">{client.cas}</td>
-                <td className="px-2 py-2 border">{client.cal}</td>
-                <td className="px-2 py-2 border">{client.training_days}</td>
-                <td className="px-2 py-2 border">{client.sma_days}</td>
-                <td className="px-2 py-2 border">{client.post_training_days}</td>
                 <td className="px-2 py-2 border">{client.live}</td>
                 <td className="px-2 py-2 border">{client.with_sma}</td>
                 <td className="px-2 py-2 border">{client.fs_live}</td>
+                <td className="px-2 py-2 border">{client.active}</td>
+                <td className="px-2 py-2 border">{client.numberOfUsers}</td>
+                <td className="px-2 py-2 border">{client.training_days}</td>
+                <td className="px-2 py-2 border">{client.sma_days}</td>
+                <td className="px-2 py-2 border">{client.post_training_days}</td>
                 <td className="px-2 py-2 border">
                   <button
                     className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-800 transition"

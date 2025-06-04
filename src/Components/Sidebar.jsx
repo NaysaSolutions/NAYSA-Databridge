@@ -7,6 +7,7 @@ import {
   faQuestionCircle,
   faBars,
   faAdd,
+  faListUl
 } from "@fortawesome/free-solid-svg-icons";
 
 // console.log("typeof setIsMobileOpen:", typeof setIsMobileOpen);
@@ -108,7 +109,7 @@ const Sidebar = ({
               />
                 <SidebarLink
                 to="/clientsfinancials"
-                icon={faUsers}
+                icon={faListUl}
                 label="Clients (Financials)"
                 isActive={location.pathname === "/clientsfinancials" && currentSection !== "add-client"}
                 isOpen={isOpen}
@@ -117,6 +118,8 @@ const Sidebar = ({
                   // setIsMobileOpen(false); // Close mobile on nav
                 }}
               />
+
+
 
               <SidebarLink
                 icon={faAdd}
