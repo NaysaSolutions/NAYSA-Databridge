@@ -4,8 +4,7 @@ import { faBell, faUser, faSignOutAlt } from "@fortawesome/free-solid-svg-icons"
 import { useAuth } from "../Authentication/AuthContext";
 import { useNavigate } from "react-router-dom";
 import ClientLookupModal from "./ClientLookupModal"; // Import the new modal component
-import { GetAPI  } from "../api";
-// import Sidebar from "./Sidebar";
+import { PostAPI  } from "../api";
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
@@ -15,55 +14,38 @@ const Dashboard = () => {
   const [allClients, setAllClients] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-// const [isOpen, setIsOpen] = useState(true);
-// const [isMobileOpen, setIsMobileOpen] = useState(false);
-
   useEffect(() => {
     if (user?.id) {
-      fetchClients();
+      fetchDashboardData();
     }
   }, [user]);
 
-  // const fetchClients = async () => {
-  //   try {
-  //     const response = await fetch("http://127.0.0.1:8000/api/getClients", {
-  //       headers: { Accept: "application/json" },
-  //     });
+const [dashboard1, setDashboard1] = useState([]);
+const [dashboard2, setDashboard2] = useState([]);
 
-  //     if (!response.ok) {
-  //       throw new Error(`HTTP error! Status: ${response.status}`);
-  //     }
+const fetchDashboardData = async () => {
+  try {
+    const response = await PostAPI(`getClientsdashboard?user=${user.id}&mode=Top10`);
+    console.log("Dashboard API response:", response);
 
-  //     const data = await response.json();
-  //     const filteredClients = data.filter(
-  //       (client) => String(client.tech_assigned).trim() === String(user.userId).trim()
-  //     );
-
-  //     setClients(filteredClients.slice(0, 10));
-  //     setAllClients(filteredClients);
-  //   } catch (error) {
-  //     console.error("Error fetching clients:", error);
-  //   }
-  // };
-
-  const fetchClients = async () => {
-    try {
-      const response = await GetAPI("getClients", {}, {
-        Accept: "application/json",
-      });
-
-      const data = response.data;
-
-      const filteredClients = data.filter(
-        (client) => String(client.tech_assigned).trim() === String(user.userId).trim()
-      );
-
-      setClients(filteredClients.slice(0, 10));
-      setAllClients(filteredClients);
-    } catch (error) {
-      console.error("Error fetching clients:", error);
+    if (response?.data?.success) {
+      const clientsData = response.data.dashboard1 || [];
+      setDashboard1(clientsData);
+      setDashboard2(response.data.dashboard2 || []);
+      setClients(clientsData); // <-- Important fix
     }
-  };
+  } catch (error) {
+    console.error("Error fetching dashboard data:", error);
+  }
+};
+
+
+useEffect(() => {
+  if (user?.id) {
+    fetchDashboardData();
+  }
+}, [user]);
+
 
   const handleLogout = () => {
     logout();
@@ -72,23 +54,11 @@ const Dashboard = () => {
 
 
   return (
-    // <div className="flex h-screen font-poppins">
-
+    
 <div className="flex h-screen font-poppins">
 
-      {/* <Sidebar
-        isOpen={isOpen}
-        setIsOpen={setIsOpen}
-        isMobileOpen={isMobileOpen}
-        setIsMobileOpen={setIsMobileOpen}
-        currentSection="dashboard"
-        onAddClient={() => {}}
-        closeAddClientForm={() => {}}
-        showAddClientForm={false}
-      /> */}
-
-      <main className="flex-1 p-4 bg-blue-50">
-        <div className="relative flex-1 p-2 bg-blue-50">
+      <main className="flex-1 p-4 bg-white">
+        <div className="relative flex-1 p-2">
           {/* Top Right Icons */}
           <div className="absolute top-0 right-0 flex items-center space-x-4">
             <FontAwesomeIcon icon={faBell} className="w-5 h-5 text-gray-500 cursor-pointer" />
@@ -135,7 +105,8 @@ const Dashboard = () => {
               </ul>
               <hr className="mt-3 mb-2"/>
               <button
-                onClick={() => setIsModalOpen(true)}
+                // onClick={() => setIsModalOpen(true)}
+                onClick={() => navigate('/clients')}
                 className="absolute bottom-2 right-4 text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center"
               >
                 View All <span className="ml-1">→</span>

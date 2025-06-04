@@ -99,7 +99,7 @@ const Sidebar = ({
               <SidebarLink
                 to="/clients"
                 icon={faUsers}
-                label="Clients"
+                label="Clients (All)"
                 isActive={location.pathname === "/clients" && currentSection !== "add-client"}
                 isOpen={isOpen}
                 onClick={() => {
@@ -112,6 +112,17 @@ const Sidebar = ({
                 icon={faListUl}
                 label="Clients (Financials)"
                 isActive={location.pathname === "/clientsfinancials" && currentSection !== "add-client"}
+                isOpen={isOpen}
+                onClick={() => {
+                  closeAddClientForm();
+                  // setIsMobileOpen(false); // Close mobile on nav
+                }}
+              />
+               <SidebarLink
+                to="/clientspayroll"
+                icon={faListUl}
+                label="Clients (HR-Pay)"
+                isActive={location.pathname === "/clientspayroll" && currentSection !== "add-client"}
                 isOpen={isOpen}
                 onClick={() => {
                   closeAddClientForm();

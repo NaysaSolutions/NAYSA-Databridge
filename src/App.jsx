@@ -35,6 +35,7 @@ import Dashboard from "./Components/Dashboard";
 import ForgotPassword from "./Authentication/ForgotPassword";
 import Clients from "./Components/Clients";
 import ClientsFinancials from "./Components/ClientsFinancials";
+import ClientsPayroll from "./Components/ClientsPayroll";
 import AddClients from "./Components/AddClient";
 
 function App() {
@@ -48,6 +49,7 @@ function App() {
           <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
           <Route path="/clients" element={<Layout><Clients /></Layout>} />
           <Route path="/clientsfinancials" element={<Layout><ClientsFinancials /></Layout>} />
+          <Route path="/clientspayroll" element={<Layout><ClientsPayroll /></Layout>} />
           <Route path="/Addclients" element={<Layout><AddClients /></Layout>} />
         </Routes>
       </Router>

@@ -9,10 +9,17 @@ import bcrypt from 'bcryptjs';
 import { Eye, EyeOff } from 'lucide-react'
 import { FaTrash, FaDownload, FaEye } from 'react-icons/fa';
 
+
 import FileUpload from "./FileUpload";
 import { FaDeleteLeft } from "react-icons/fa6";
 
+import { BASE_URL } from '../api';  // Adjust path accordingly
+
+
 const AddClientForm = () => {
+
+const [clientcontracts, setClientContracts] = useState({});
+
   const navigate = useNavigate();
   const location = useLocation();
   const fileInputRef = useRef(null);
@@ -61,11 +68,7 @@ const [smaInformationFiles, setSmaInformationFiles] = useState([]);
   const [isViewMode, setIsViewMode] = useState(false);
   
 
-  const [visibleCustomerServiceRows, setVisibleCustomerServiceRows] = useState(10);
-  const [visibleTurnOverRows, setVisibleTurnOverRows] = useState(10);
-  const [visibleSmaRows, setVisibleSmaRows] = useState(10);
   const [activeTab, setActiveTab] = useState("Contact Information");
-  const [activeTab2, setActiveTab2] = useState("Client Service Form");
 
   // START MODULE
 
@@ -138,14 +141,6 @@ const [tabOtherModules, setTabOtherModules] = useState({
     "Employee Portal",
     "Employee Portal Cloud",],
 
-  // "REALTY": [
-  //   "Property Management", 
-  //   "Valuation"],
-
-  // "WMS": [
-  //   "Logistics", 
-  //   "Reports"],
-
 });
 
 
@@ -155,15 +150,34 @@ const selectedModules = tabModules[activeTopTab] || [];
 
 
 const handleModuleToggle = (module) => {
-  const current = tabModules[activeTopTab] || [];
-  const isChecked = current.includes(module);
-  const updated = isChecked
-    ? current.filter(m => m !== module)
-    : [...current, module];
+  setTabModules(prev => {
+    const current = prev[activeTopTab] || [];
+    const updated = current.includes(module)
+      ? current.filter(m => m !== module)
+      : [...current, module];
 
-  setTabModules(prev => ({ ...prev, [activeTopTab]: updated }));
-  setPendingChanges(prev => ({ ...prev, modules: updated }));
+    return {
+      ...prev,
+      [activeTopTab]: updated
+    };
+  });
+
+  setPendingChanges(prev => {
+    const current = (prev.modules?.[activeTopTab]) || [];
+    const updated = current.includes(module)
+      ? current.filter(m => m !== module)
+      : [...current, module];
+
+    return {
+      ...prev,
+      modules: {
+        ...(prev.modules || {}),
+        [activeTopTab]: updated
+      }
+    };
+  });
 };
+
 
 
 const handleTechnicianChange = (index, selectedName) => {
@@ -205,8 +219,6 @@ const removeTechnicianInput = (index) => {
 
 // END MODULE
 
-
-
   const [client, setClient] = useState({
   client_code: "",
   client_name: "",
@@ -217,40 +229,14 @@ const removeTechnicianInput = (index) => {
   remote_pw: "",
   server_pw: "",
   helpdesk: "",
+  app_type: "",
   contact_persons: ["", ""]
 });
 
 
-//   const [clientcontracts, setClientContracts] = useState({
-//   client_code: "",
-//   cas: "N",
-//   live: "N",
-//   sma_days: 0,
-//   fs_live: "N",
-//   cal: "",
-//   training_days: 0,
-//   training_days_consumed: 0,
-//   post_training_days: 0,
-//   post_training_days_consumed: 0,
-//   fs_generation_contract: 0,
-//   fs_generation_consumed: 0,
-//   with_sma: "N",
-//   active: "N",
-// });
-
-const [clientcontracts, setClientContracts] = useState({});
+// const [clientcontracts, setClientContracts] = useState({});
 
 
-
-  // const [toggles, setToggles] = useState({
-  //   cas: false,
-  //   live: false,
-  //   with_sma: false,
-  //   fs_live: false,
-  //   active: false
-  // });
-
-  // const [toggles, setToggles] = useState({});
 
 const initialToggleStatePerTab = {
   cas: false,
@@ -313,10 +299,12 @@ const [toggles, setToggles] = useState({
   }, []);
 
   useEffect(() => {
-  if (clientcontracts.length > 0) {
-    console.log('Ready to display:', clientcontracts);
+  const contractsForTab = clientcontracts[activeTopTab];
+  if (contractsForTab && contractsForTab.length > 0) {
+    console.log('Ready to display:', contractsForTab);
   }
-}, [clientcontracts]);
+}, [clientcontracts, activeTopTab]);
+
 
 // inside your component:
 useEffect(() => {
@@ -329,19 +317,23 @@ useEffect(() => {
   if (location.state) {
     setClient(location.state);
     setIsViewMode(true);
-    fetchClientData(location.state.client_code)
+    fetchClientData(location.state.client_code, activeTopTab)
       .then(data => {
         if (data) {
-          // Instead of setSelectedModules, update tabModules for the active tab:
+          // Update tabModules for the active tab
           const modulesForTab = data.modules?.map(m => m.module_name) || [];
           setTabModules(prev => ({
             ...prev,
             [activeTopTab]: modulesForTab
           }));
         }
+      })
+      .catch(error => {
+        console.error('Error fetching client data in useEffect:', error);
       });
   }
 }, [location.state, activeTopTab]);
+
 
 
   // Fetch client files when client code changes
@@ -351,55 +343,23 @@ useEffect(() => {
     }
   }, [client.client_code]);
 
-  // Update toggles when client data changes
-//   useEffect(() => {
-//   if (client) {
-//     setToggles({
-//       cas: client.cas === "Y",
-//       live: client.live === "Y",
-//       with_sma: client.with_sma === "Y",
-//       fs_live: client.fs_live === "Y",
-//       active: client.active === "Y"
-//     });
-//   }
-// }, [client]);
-
-// useEffect(() => {
-//   if (clientcontracts.length && activeTopTab) {
-//     const contractForTab = clientcontracts.find(c => c.app_type === activeTopTab) || {};
-
-//     setToggles(prev => ({
-//   ...prev,
-//   [activeTopTab]: {
-//     live: contractForAppType.live === "Y",
-//     with_sma: contractForAppType.with_sma === "Y",
-//     active: contractForAppType.active === "Y",
-//     fs_live: contractForAppType.fs_live === "Y",
-//     cas: contractForAppType.cas === "Y"
-//   }
-// }));
-
-//   }
-// }, [activeTopTab, clientcontracts]);
-
 const [hasLoadedToggles, setHasLoadedToggles] = useState(false);
 
 useEffect(() => {
-  if (clientcontracts[activeTopTab] && !hasLoadedToggles) {
-    const contract = clientcontracts[activeTopTab];
-    setToggles(prev => ({
-      ...prev,
-      [activeTopTab]: {
-        live: contract.live === "Y",
-        with_sma: contract.with_sma === "Y",
-        active: contract.active === "Y",
-        fs_live: contract.fs_live === "Y",
-        cas: contract.cas === "Y"
-      }
-    }));
-    setHasLoadedToggles(true);
-  }
+  const contract = clientcontracts[activeTopTab]?.[0];
+  if (!contract) return;
+  setToggles(prev => ({
+    ...prev,
+    [activeTopTab]: {
+      cas: contract.cas === "Y",
+      fs_live: contract.fs_live === "Y",
+      live: contract.live === "Y",
+      with_sma: contract.with_sma === "Y",
+      active: contract.active === "Y"
+    }
+  }));
 }, [clientcontracts, activeTopTab]);
+
 
 
 
@@ -441,180 +401,160 @@ useEffect(() => {
     }
   };
 
-  const fetchClientData = async (clientCode) => {
-    console.log('[fetchClientData] Fetching data for client:', clientCode);
-    setIsLoading(true); // Set loading to true when starting fetch
-    
-    const apiBase = process.env.NODE_ENV === 'development' 
-      ? 'http://127.0.0.1:8000/api' 
-      : 'http://192.168.56.1:82/api';
+  const fetchClientData = async (clientCode, appType) => {
+  console.log('[fetchClientData] Fetching data for client:', clientCode, appType);
+  setIsLoading(true);
 
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        navigate('/login');
-        return;
-      }
+  const apiBase = process.env.NODE_ENV === 'development' 
+    ? 'http://127.0.0.1:8000/api' 
+    : 'http://192.168.56.1:82/api';
 
-      const headers = {
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/json'
-      };
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/login');
+      return;
+    }
 
-      const response = await fetch(`${apiBase}/load-client-data?client_code=${clientCode}&app_type=${activeTopTab}`,{ headers });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Request failed:', errorText);
-        if (response.status === 401) navigate('/login');
-        throw new Error(errorText || 'Request failed');
-      }
+    const headers = {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json'
+    };
 
-      const data = await response.json();
-      console.log('Raw API response:', data);
+    const response = await fetch(`${apiBase}/load-client-data?client_code=${clientCode}&app_type=${appType}`, { headers });
 
-      if (!data.success) {
-        throw new Error(data.error || 'API request failed');
-      }
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Request failed:', errorText);
+      if (response.status === 401) navigate('/login');
+      throw new Error(errorText || 'Request failed');
+    }
 
-      const receivedTechnicians = data.technicians || [];
+    const data = await response.json();
+    console.log('Raw API response:', data);
 
-      const filteredTechnicians = receivedTechnicians.filter(t => t.app_type === activeTopTab);
+    if (!data.success) {
+      throw new Error(data.error || 'API request failed');
+    }
 
-      const technicianDisplayNames = filteredTechnicians.map(tech => {
-        const name = Object.entries(technicianCodeMap).find(([_, c]) => c === tech.tech_code)?.[0] || tech.tech_code;
-        return `${name} (${tech.tech_code})`;
-      });
+    const receivedTechnicians = data.technicians || [];
 
+    const filteredTechnicians = receivedTechnicians.filter(t => t.app_type === appType);
 
-        const clientData = data.clients || {};
-        
-        const contracts = Array.isArray(data.client_contract)
-          ? data.client_contract
-          : data.client_contract
-            ? [data.client_contract]
-            : [];
+    const technicianDisplayNames = filteredTechnicians.map(tech => {
+      const name = Object.entries(technicianCodeMap).find(([_, c]) => c === tech.tech_code)?.[0] || tech.tech_code;
+      return `${name} (${tech.tech_code})`;
+    });
 
+    const clientData = data.clients || {};
+    const contacts = data.client_contact || [];
 
-        const formatDate = (date) => {
-        const d = new Date(date);
-        const year = d.getFullYear();
-        const month = (`0${d.getMonth() + 1}`).slice(-2);
-        const day = (`0${d.getDate()}`).slice(-2);
-        return `${year}-${month}-${day}`;
-      };
+    const contracts = Array.isArray(data.client_contract)
+      ? data.client_contract
+      : data.client_contract
+        ? [data.client_contract]
+        : [];
 
-        // ✅ Filter by current app type// After filtering contracts by activeTopTab
-        const contractsForAppType = contracts.filter(c => c.app_type === activeTopTab);
-        const contractForAppType = contractsForAppType.length > 0 ? contractsForAppType[0] : {};
+    const formatDate = (date) => {
+      if (!date) return null;
+      const d = new Date(date);
+      if (isNaN(d)) return null;
+      const year = d.getFullYear();
+      const month = (`0${d.getMonth() + 1}`).slice(-2);
+      const day = (`0${d.getDate()}`).slice(-2);
+      return `${year}-${month}-${day}`;
+    };
 
-        // Format dates before setting
-        const formattedContractForAppType = contractForAppType
-          ? {
-              ...contractForAppType,
-              contract_date: formatDate(contractForAppType.contract_date),
-              sma_date: formatDate(contractForAppType.sma_date),
-            }
-          : {};
+    const contractsForAppType = contracts.filter(c => c.app_type === appType);
+    const contractForAppType = contractsForAppType.length > 0 ? contractsForAppType[0] : null;
 
-        // Set clientcontracts as a single object, not an array
-        // setClientContracts(contractForAppType);
-        // setHasLoadedToggles(false);
-        // setClientContracts(formattedContractForAppType);
+    const formattedContractsForAppType = contractsForAppType.map(c => ({
+      ...c,
+      contract_date: c.contract_date ? formatDate(c.contract_date) : null,
+      sma_date: c.sma_date ? formatDate(c.sma_date) : null,
+    }));
 
-        setClientContracts(prev => ({
+    setClientContracts(prev => ({
   ...prev,
-  [activeTopTab]: formattedContractForAppType
+  [appType]: formattedContractsForAppType.length > 0 ? formattedContractsForAppType : [{}]
 }));
 
+    setToggles(prev => ({
+      ...prev,
+      [appType]: {
+        cas: contractForAppType?.cas === "Y",
+        fs_live: contractForAppType?.fs_live === "Y",
+        live: contractForAppType?.live === "Y",
+        with_sma: contractForAppType?.with_sma === "Y",
+        active: contractForAppType?.active === "Y"
+      }
+    }));
 
-      //   setClientContracts(prev => ({
-      //   ...prev,
-      //   [activeTopTab]: contractForAppType
-      // }));
+    const transformedClient = {
+      client_code: clientData.client_code || '',
+      client_name: clientData.client_name || '',
+      main_address: clientData.main_address || '',
+      industry: clientData.industry || '',
+      remote_id: clientData.remote_id || '',
+      remote_pw: clientData.remote_pw || '',
+      server_pw: clientData.server_pw || '',
+      helpdesk: clientData.helpdesk || '',
+      app_type: clientData.appType || '',
 
-        // const formatDate = (dateStr) => {
-        //   if (!dateStr) return '';
-        //   return new Date(dateStr).toISOString().split('T')[0];
-        // };
+      client_contract: contractsForAppType.map(c => ({
+        app_type: c.app_type,
+        training_days: Number(c.training_days) || 0,
+        training_days_consumed: Number(c.training_days_consumed) || 0,
+        post_training_days: Number(c.post_training_days) || 0,
+        post_training_days_consumed: Number(c.post_training_days_consumed) || 0,
+        fs_generation_contract: Number(c.fs_generation_contract) || 0,
+        fs_generation_consumed: Number(c.fs_generation_consumed) || 0,
+        numberOfUsers: c.numberOfUsers || 0,
+        numberOfEmployees: c.numberOfEmployees || 0,
+        contract_date: formatDate(c.contract_date || ''),
+        sma_date: formatDate(c.sma_date || ''),
+        cas: c.cas || 'N',
+        live: c.live || 'N',
+        with_sma: c.with_sma || 'N',
+        fs_live: c.fs_live || 'N',
+        active: c.active || 'N',
+        sma_days: Number(c.sma_days) || 0,
+      }))
+    };
 
-
-        const transformedClient = {
-          client_code: clientData.client_code || '',
-          client_name: clientData.client_name || '',
-          main_address: clientData.main_address || '',
-          industry: clientData.industry || '',
-          remote_id: clientData.remote_id || '',
-          remote_pw: clientData.remote_pw || '',
-          server_pw: clientData.server_pw || '',
-          helpdesk: clientData.helpdesk || '',
-
-          // Optional: Move contract details by app_type
-        client_contract: contractsForAppType.map(c => ({
-            app_type: c.app_type,
-            training_days: Number(c.training_days) || 0,
-            training_days_consumed: Number(c.training_days_consumed) || 0,
-            post_training_days: Number(c.post_training_days) || 0,
-            post_training_days_consumed: Number(c.post_training_days_consumed) || 0,
-            fs_generation_contract: Number(c.fs_generation_contract) || 0,
-            fs_generation_consumed: Number(c.fs_generation_consumed) || 0,
-            numberOfUsers: c.numberOfUsers || 0,
-            numberOfEmployees: c.numberOfEmployees || 0,
-            // contract_date: c.contract_date || '',
-            contract_date: formatDate(c.contract_date || ''),
-            sma_date: formatDate(c.sma_date || ''),
-            cas: c.cas || 'N',
-            live: c.live || 'N',
-            with_sma: c.with_sma || 'N',
-            fs_live: c.fs_live || 'N',
-            active: c.active || 'N',
-            sma_days: Number(c.sma_days) || 0,
-          }))
-        };
-
-        setToggles(prev => ({
-          ...prev,
-          [activeTopTab]: {
-            cas: contractForAppType.cas === "Y",
-            fs_live: contractForAppType.fs_live === "Y",
-            live: contractForAppType.live === "Y",
-            with_sma: contractForAppType.with_sma === "Y",
-            active: contractForAppType.active === "Y"
-          }
-        }));
-
-          setClient(transformedClient);
-          // setClientContracts(contractsForAppType);  // ✅ Only contracts matching activeTopTab
+    // setClient(transformedClient);
 
 
-          // Set technicians per tab
-          setTabTechnicians(prev => ({
-            ...prev,
-            [activeTopTab]: [...technicianDisplayNames, ""]
-          }));
-
-          // setSelectedTechnicians(technicianDisplayNames);
-          setClientTechnicians(receivedTechnicians.map(t => t.tech_code));
-
-          // Set modules per tab
-          setTabModules(prev => ({
-            ...prev,
-            [activeTopTab]: data.modules?.map(m => m.module_name) || []
-          }));
-
-          setApplications(data.applications || []);
+    setClient({
+  ...transformedClient,
+  contact_persons: contacts
+});
 
 
-      return data;
+    setTabTechnicians(prev => ({
+      ...prev,
+      [appType]: [...technicianDisplayNames, ""]
+    }));
 
-    } catch (error) {
-      console.error('Error fetching client data:', error);
-      alert(`Error loading client data: ${error.message}`);
-      throw error;
-    } finally {
-      setIsLoading(false); // Set loading to false when done
-    }
-  };
+    setClientTechnicians(receivedTechnicians.map(t => t.tech_code));
+
+    setTabModules(prev => ({
+      ...prev,
+      [appType]: data.modules?.map(m => m.module_name) || []
+    }));
+
+    setApplications(data.applications || []);
+
+    return data;
+
+  } catch (error) {
+    console.error('Error fetching client data:', error);
+    alert(`Error loading client data: ${error.message}`);
+    throw error;
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   
 
@@ -627,40 +567,6 @@ useEffect(() => {
   };
 
 
-//   const handleToggle = (key) => {
-//   const newValue = !toggles[key];
-//   setToggles(prev => ({ ...prev, [key]: newValue }));
-//   setClient(prev => ({ ...prev, [key]: newValue ? "Y" : "N" }));
-// };
-
-// const handleToggle = (key) => {
-//   setToggles(prev => {
-//     const prevForTab = prev[activeTopTab] || {};
-//     const newValue = !prevForTab[key];
-
-//     return {
-//       ...prev,
-//       [activeTopTab]: {
-//         ...prevForTab,
-//         [key]: newValue,
-//       }
-//     };
-//   });
-
-//   // Also update clientcontracts for the activeTopTab (toggle saved in contract)
-//   setClientContracts(prev => ({
-//     ...prev,
-//     [key]: !prev[key] ? "Y" : "N"
-//   }));
-// };
-
-const defaultToggleState = {
-  cas: false,
-  live: false,
-  with_sma: false,
-  fs_live: false,
-  active: false,
-};
 const initialToggleState = {
   cas: false,
   live: false,
@@ -670,30 +576,22 @@ const initialToggleState = {
 };
 
 const handleToggle = (key) => {
+  // Update toggles UI state (booleans)
   setToggles(prev => {
-    // Current toggles for active tab, fallback to defaults if missing
     const currentTabToggles = prev[activeTopTab] || { ...initialToggleState };
-
-    console.log('Before toggle:', currentTabToggles);
-
-    // Toggle only the clicked key
     const newValue = !currentTabToggles[key];
-
-    const updatedTabToggles = {
-      ...currentTabToggles,
-      [key]: newValue,
-    };
-
-    console.log('After toggle:', updatedTabToggles);
-
     return {
       ...prev,
-      [activeTopTab]: updatedTabToggles,
+      [activeTopTab]: {
+        ...currentTabToggles,
+        [key]: newValue,
+      }
     };
   });
 
+  // Update clientContracts state (strings "Y"/"N")
   setClientContracts(prev => {
-    const currentContract = prev[activeTopTab] || {
+    const currentContracts = prev[activeTopTab] || [{
       app_type: activeTopTab,
       cas: "N",
       live: "N",
@@ -711,16 +609,16 @@ const handleToggle = (key) => {
       contract_date: '',
       sma_date: '',
       sma_days: 0
-    };
+    }];
 
     const updatedContract = {
-      ...currentContract,
-      [key]: currentContract[key] === "Y" ? "N" : "Y"
+      ...currentContracts[0],
+      [key]: currentContracts[0][key] === "Y" ? "N" : "Y"
     };
 
     return {
       ...prev,
-      [activeTopTab]: updatedContract,
+      [activeTopTab]: [updatedContract],
     };
   });
 };
@@ -729,13 +627,14 @@ const handleToggle = (key) => {
 
 
 useEffect(() => {
-  if (clientcontracts[activeTopTab]) {
-    const contract = clientcontracts[activeTopTab];
+  const contracts = clientcontracts[activeTopTab];
+  if (contracts && contracts.length > 0) {
+    const contract = contracts[0];  // take the first contract
 
     setToggles(prev => ({
       ...prev,
       [activeTopTab]: {
-        ...prev[activeTopTab], // <-- preserve previous toggle state
+        ...prev[activeTopTab], // preserve previous toggle state
         cas: contract.cas === "Y",
         live: contract.live === "Y",
         with_sma: contract.with_sma === "Y",
@@ -745,6 +644,7 @@ useEffect(() => {
     }));
   }
 }, [clientcontracts, activeTopTab]);
+
 
 
 
@@ -1021,17 +921,12 @@ const handleDeleteFile = async (file) => {
       alert(`Download failed: ${error.message}`);
     }
   };
-
-  // const handleChange = (e) => {
-  //   const { name, value } = e.target;
-  //   setClient(prev => ({ ...prev, [name]: value }));
-  // };
-
-const handleChange = (e) => {
-  const { name, value } = e.target;
+  const handleChange = (e) => {
+  const { name, value, type, checked } = e.target;
   console.log(`handleChange: ${name} = ${value}`);
 
-  if ([
+  // Fields related to contracts
+  const contractFields = [
     'training_days',
     'training_days_consumed',
     'post_training_days',
@@ -1048,15 +943,69 @@ const handleChange = (e) => {
     'fs_live',
     'active',
     'sma_days'
-  ].includes(name)) {
-    setClientContracts(prev => ({
-      ...prev,
-      [name]: name.includes('days') || name.includes('number') ? Number(value) : value
-    }));
+  ];
+
+  if (contractFields.includes(name)) {
+    setClientContracts(prev => {
+      const currentContracts = prev[activeTopTab] || [{
+        app_type: activeTopTab,
+        cas: "N",
+        live: "N",
+        with_sma: "N",
+        fs_live: "N",
+        active: "N",
+        training_days: 0,
+        training_days_consumed: 0,
+        post_training_days: 0,
+        post_training_days_consumed: 0,
+        fs_generation_contract: 0,
+        fs_generation_consumed: 0,
+        numberOfUsers: 0,
+        numberOfEmployees: 0,
+        contract_date: '',
+        sma_date: '',
+        sma_days: 0
+      }];
+
+      let updatedValue = value;
+
+      // Convert numeric fields to numbers
+      if (['training_days', 'training_days_consumed', 'post_training_days', 'post_training_days_consumed', 'fs_generation_contract', 'fs_generation_consumed', 'numberOfUsers', 'numberOfEmployees', 'sma_days'].includes(name)) {
+        updatedValue = Number(value);
+      }
+
+      // For toggles stored as "Y"/"N", normalize values here if needed
+      if (['cas', 'live', 'with_sma', 'fs_live', 'active'].includes(name)) {
+        // Optional: allow "Y"/"N" toggle or from checkbox (true/false)
+        if (type === 'checkbox') {
+          updatedValue = checked ? "Y" : "N";
+        } else {
+          // if user types "Y"/"N" or other input, keep as is
+          updatedValue = value.toUpperCase() === "Y" ? "Y" : "N";
+        }
+      }
+
+      const updatedContract = {
+        ...currentContracts[0],
+        [name]: updatedValue,
+      };
+
+      return {
+        ...prev,
+        [activeTopTab]: [updatedContract],
+      };
+    });
   } else {
-    setClient(prev => ({ ...prev, [name]: value }));
+    // For non-contract fields, update client object
+    setClient(prev => ({
+      ...prev,
+      [name]: value,
+    }));
   }
 };
+
+
+
 
 
 
@@ -1101,9 +1050,8 @@ const syncTogglesToContracts = () => {
 };
 
 
-  const handleSave = async () => {
+const handleSave = async () => {
   const moduleCodeMap = {
-
     'General Ledger': 'GL',
     'Accounts Payable': 'AP',
     'Sales': 'SA',
@@ -1120,33 +1068,29 @@ const syncTogglesToContracts = () => {
     'Importation': 'IMP',
     'Financing': 'FIN',
     'Leasing': 'LS',
-
     'HR Management and Payroll': 'HRPAY',
     'HR Information System': 'HRIS',
     'Employee Portal': 'HRPortal',
     'Employee Portal Cloud': 'HRPortalCloud',
-
     'Realty': 'REALTY',
     'In-House Financing': 'INHOUSE',
-
     'Inbound': 'INB',
     'Outbound': 'OUTB',
     'Other Activities': 'OTH',
     'Billing': 'AR',
-
   };
 
   try {
     setIsSaving(true);
 
-    // Get technician inputs for current tab, filtering empty strings
+    // Filter out empty technician inputs for active tab
     const techniciansToSave = (tabTechnicians[activeTopTab] || []).filter(t => t !== "");
 
-    // Flatten all technicians across tabs with module type
+    // Flatten all technicians across tabs with app_type
     const clientTechnicalsPayload = Object.entries(tabTechnicians).flatMap(
       ([appType, technicians]) =>
         technicians
-          .filter(t => t !== "") // remove empty inputs
+          .filter(t => t !== "")
           .map(t => {
             const matches = t.match(/\(([^)]+)\)/);
             const tech_code = matches ? matches[1] : t;
@@ -1157,142 +1101,144 @@ const syncTogglesToContracts = () => {
           })
     );
 
-    const allSelectedModules = Object.values(tabModules).flat();
 
-  // const selectedModulesForActiveTab = tabModules[activeTopTab] || [];
-  // const allowedModules = tabMainModules[activeTopTab] || [];
-  // const filteredModules = selectedModulesForActiveTab.filter(module =>
-  //   allowedModules.includes(module)
-  // );
 
-  // const clientModulesPayload = filteredModules.map(moduleName => ({
-  //   module_name: moduleName,
-  //   module_code: moduleCodeMap[moduleName] || null,
-  //   module_type: activeTopTab,
-  // }));
+// const clientModulesPayload = Object.entries(tabModules).flatMap(
+//   ([appType, selectedModules]) => {
+//     // Combine main and other modules for this appType
+//     const allowedModules = [
+//       ...(tabMainModules[appType] || []),
+//       ...(tabOtherModules[appType] || []),
+//     ];
 
-  const selectedModulesForActiveTab = tabModules[activeTopTab] || [];
+//     return selectedModules
+//       .filter(moduleName => allowedModules.includes(moduleName)) // filter to only allowed modules
+//       .map(moduleName => ({
+//         module_name: moduleName,
+//         module_code: moduleCodeMap[moduleName] || null,
+//         module_type: appType
+//       }));
+//   }
+// );
 
-  const clientModulesPayload = selectedModulesForActiveTab.map(moduleName => ({
-    module_name: moduleName,
-    module_code: moduleCodeMap[moduleName] || null,
-    module_type: activeTopTab,
+const clientModulesPayload = Object.entries(tabModules).flatMap(
+  ([appType, selectedModules]) => {
+    const allowedModules = [
+      ...(tabMainModules[appType] || []),
+      ...(tabOtherModules[appType] || []),
+    ];
+
+    // console.log(`AppType: ${appType}`);
+    // console.log(`Selected Modules:`, selectedModules);
+    // console.log(`Allowed Modules:`, allowedModules);
+
+    return selectedModules
+      .filter(moduleName => allowedModules.includes(moduleName)) // You can comment this line out temporarily
+      .map(moduleName => ({
+        module_name: moduleName,
+        module_code: moduleCodeMap[moduleName] || null,
+        module_type: appType
+      }));
+  }
+);
+
+console.log("Client Modules Payload:", clientModulesPayload);
+
+
+const clientContactPayload = (client.contact_persons || [])
+  .filter(p => p.contact_person?.trim()) // skip entries with no name
+  .map(p => ({
+    client_code: client.client_code,
+    contact_person: p.contact_person?.trim() || '',
+    position: p.position?.trim() || '',
+    contact_no: p.contact_no?.trim() || '',
+    email_add: p.email_add?.trim() || ''
   }));
 
 
-// Find the contract entry for the current active tab (app_type)
-// const contract = (client.client_contract || []).find(c => c.app_type === activeTopTab) || {};
-
-// const togglesToContract = {
-//   cas: toggles.cas ? "Y" : "N",
-//   live: toggles.live ? "Y" : "N",
-//   with_sma: toggles.with_sma ? "Y" : "N",
-//   fs_live: toggles.fs_live ? "Y" : "N",
-//   active: toggles.active ? "Y" : "N"
-// };
-
-const formatDate = (date) => {
-  const d = new Date(date);
-  const year = d.getFullYear();
-  const month = (`0${d.getMonth() + 1}`).slice(-2);
-  const day = (`0${d.getDate()}`).slice(-2);
-  return `${year}-${month}-${day}`;
-};
-
-const togglesToContract = mapTogglesToYN(toggles[activeTopTab] || {});
-
-const clientContractPayload = [{
-  app_type: activeTopTab,
-  training_days: Number(clientcontracts.training_days) || 0,
-  training_days_consumed: Number(clientcontracts.training_days_consumed) || 0,
-  post_training_days: Number(clientcontracts.post_training_days) || 0,
-  post_training_days_consumed: Number(clientcontracts.post_training_days_consumed) || 0,
-  fs_generation_contract: Number(clientcontracts.fs_generation_contract) || 0,
-  fs_generation_consumed: Number(clientcontracts.fs_generation_consumed) || 0,
-  numberOfUsers: Number(clientcontracts.numberOfUsers) || 0,
-  numberOfEmployees: Number(clientcontracts.numberOfEmployees) || 0,
-  // contract_date: clientcontracts.contract_date || '',
-  contract_date: formatDate(clientcontracts.contract_date || ''),
-  sma_date: formatDate(clientcontracts.sma_date || ''),
-  cas: togglesToContract.cas,
-  live: togglesToContract.live,
-  with_sma: togglesToContract.with_sma,
-  fs_live: togglesToContract.fs_live,
-  active: togglesToContract.active,
-  sma_days: Number(clientcontracts.sma_days) || 0
-}];
-
-
-// const clientContractPayload = [{
-//   app_type: activeTopTab,
-//   training_days: Number(clientcontracts.training_days) || 0,
-//   training_days_consumed: Number(clientcontracts.training_days_consumed) || 0,
-//   post_training_days: Number(clientcontracts.post_training_days) || 0,
-//   post_training_days_consumed: Number(clientcontracts.post_training_days_consumed) || 0,
-//   fs_generation_contract: Number(clientcontracts.fs_generation_contract) || 0,
-//   fs_generation_consumed: Number(clientcontracts.fs_generation_consumed) || 0,
-//   numberOfUsers: Number(clientcontracts.numberOfUsers) || 0,
-//   numberOfEmployees: Number(clientcontracts.numberOfEmployees) || 0,
-//   contract_date: clientcontracts.contract_date || '',
-//   cas: clientcontracts.cas || 'N',
-//   live: clientcontracts.live || 'N',
-//   with_sma: clientcontracts.with_sma || 'N',
-//   fs_live: clientcontracts.fs_live || 'N',
-//   active: clientcontracts.active || 'N',
-//   sma_days: Number(clientcontracts.sma_days) || 0
-// }];
 
 
 
+    // Helper to format dates safely
+    const formatDate = (date) => {
+      if (!date) return '';
+      const d = new Date(date);
+      if (isNaN(d)) return '';
+      const year = d.getFullYear();
+      const month = (`0${d.getMonth() + 1}`).slice(-2);
+      const day = (`0${d.getDate()}`).slice(-2);
+      return `${year}-${month}-${day}`;
+    };
 
+    // Map toggles (booleans) to "Y"/"N"
+    const togglesToContract = mapTogglesToYN(toggles[activeTopTab] || {});
 
-    // Extract codes from display strings
+    // Get the current contract from state for active tab, fallback to empty object
+    const currentContract = clientcontracts[activeTopTab]?.[0] || {};
+
+    // Build contract payload for API
+    const clientContractPayload = [{
+      app_type: activeTopTab,
+      training_days: Number(currentContract.training_days) || 0,
+      training_days_consumed: Number(currentContract.training_days_consumed) || 0,
+      post_training_days: Number(currentContract.post_training_days) || 0,
+      post_training_days_consumed: Number(currentContract.post_training_days_consumed) || 0,
+      fs_generation_contract: Number(currentContract.fs_generation_contract) || 0,
+      fs_generation_consumed: Number(currentContract.fs_generation_consumed) || 0,
+      numberOfUsers: Number(currentContract.numberOfUsers) || 0,
+      numberOfEmployees: Number(currentContract.numberOfEmployees) || 0,
+      contract_date: formatDate(currentContract.contract_date),
+      sma_date: formatDate(currentContract.sma_date),
+      cas: togglesToContract.cas,
+      live: togglesToContract.live,
+      with_sma: togglesToContract.with_sma,
+      fs_live: togglesToContract.fs_live,
+      active: togglesToContract.active,
+      sma_days: Number(currentContract.sma_days) || 0,
+    }];
+
+    // Log payload for debugging
+    console.log('Saving client contract payload:', clientContractPayload);
+    console.log('Saving client contact payload:', client.contact_persons);
+
+    // Extract technician codes for active tab (not really used below, but keep if needed)
     const technicianCodes = techniciansToSave.map(tech => {
       const matches = tech.match(/\(([^)]+)\)/);
       return matches ? matches[1] : tech;
     });
 
     const payload = {
-      mode: 'Upsert',
-      params: JSON.stringify({
-        json_data: {
-          client_code: client.client_code,
-          client_name: client.client_name,
-          main_address: client.main_address,
-          // contract_date: client.contract_date,
-          industry: client.industry,
-          remote_id: client.remote_id,
-          remote_pw: client.remote_pw,
-          server_pw: client.server_pw,
-          // cas: client.cas,
-          // live: client.live,
-          // with_sma: client.with_sma,
-          // fs_live: client.fs_live,
-          // active: client.active,
-          // cal: client.cal,
-          // sma_days: client.sma_days,
-          // training_days: client.training_days,
-          // training_days_consumed: client.training_days_consumed ?? 0,
-          // post_training_days: client.post_training_days,
-          // post_training_days_consumed: client.post_training_days_consumed ?? 0,
-          // fs_generation_consumed: client.fs_generation_consumed ?? 0,
-          contact_persons: client.contact_persons,
-          helpdesk: client.helpdesk,  
-          client_modules: clientModulesPayload,
-          client_technicals: clientTechnicalsPayload,
-          client_contract: clientContractPayload,
-        }
-      })
-    };
+  mode: 'Upsert',
+  params: JSON.stringify({
+    json_data: {
+      client_code: client.client_code,
+      client_name: client.client_name,
+      main_address: client.main_address,
+      industry: client.industry,
+      remote_id: client.remote_id,
+      remote_pw: client.remote_pw,
+      server_pw: client.server_pw,
+      helpdesk: client.helpdesk,
+    client_modules: clientModulesPayload,
+    client_technicals: clientTechnicalsPayload,
+    client_contract: clientContractPayload,
+    client_contact: clientContactPayload,
+      },
+    // client_contact: client.contact_persons // ✅ ADD THIS LINE
+  
+    // client_contact: client.contact_persons // ✅ ADD THIS LINE
+  })
+};
 
-    const apiBase = process.env.NODE_ENV === 'development' 
-      ? 'http://127.0.0.1:8000/api' 
+
+    const apiBase = process.env.NODE_ENV === 'development'
+      ? 'http://127.0.0.1:8000/api'
       : 'http://192.168.56.1:82/api';
 
     const response = await axios.post(`${apiBase}/client/save`, payload, {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       }
     });
 
@@ -1303,15 +1249,14 @@ const clientContractPayload = [{
         text: 'Client data saved successfully'
       });
 
-      if (!isViewMode) {
-        navigate(`/client/${client.client_code}`, { 
-          state: { ...client, client_code: client.client_code } 
-        });
-      }
+      // if (!isViewMode) {
+      //   navigate(`/client/${client.client_code}`, {
+      //     state: { ...client, client_code: client.client_code }
+      //   });
+      // }
     } else {
       throw new Error(response.data.message || 'Save failed');
     }
-
   } catch (error) {
     console.error('Save error:', error);
     Swal.fire({
@@ -1323,6 +1268,45 @@ const clientContractPayload = [{
     setIsSaving(false);
   }
 };
+
+
+const updateContactField = (index, field, value) => {
+  setClient(prev => {
+    const updated = [...(prev.contact_persons || [])];
+    updated[index] = { ...updated[index], [field]: value };
+    return { ...prev, contact_persons: updated };
+  });
+};
+
+const addNewContact = () => {
+  setClient(prev => ({
+    ...prev,
+    contact_persons: [
+      ...(prev.contact_persons || []),
+      {
+        client_code: prev.client_code, // ✅ ensure client_code is included
+        contact_person: '',
+        position: '',
+        contact_no: '',
+        email_add: ''
+      }
+    ]
+  }));
+};
+
+
+const removeContact = (index) => {
+  setClient(prev => {
+    const updated = [...(prev.contact_persons || [])];
+    updated.splice(index, 1);
+    return { ...prev, contact_persons: updated };
+  });
+};
+
+
+const currentContract = clientcontracts[activeTopTab]?.[0] || {};
+
+
 
   return (
     <div className="p-4 bg-white min-h-screen">
@@ -1488,14 +1472,14 @@ const clientContractPayload = [{
 
     {/* Contract Section */}
     <div className="bg-white rounded-xl shadow p-4 border">
-      <h2 className="text-lg font-semibold text-blue-800 mb-4">Contract Details</h2>
+      <h2 className="text-base font-semibold text-blue-800 mb-4">Contract Details</h2>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Signed Contract Date</label>
           <input
             type="date"
             name="contract_date"
-            value={clientcontracts.contract_date ?? ''}
+            value={currentContract.contract_date ?? ''}
             onChange={handleChange}
             className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
           />
@@ -1505,7 +1489,7 @@ const clientContractPayload = [{
           <input
             type="date"
             name="sma_date"
-            value={clientcontracts.sma_date ?? ''}
+            value={currentContract.sma_date ?? ''}
             onChange={handleChange}
             className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
           />
@@ -1515,7 +1499,7 @@ const clientContractPayload = [{
           <input
             type="number"
             name="numberOfUsers"
-            value={clientcontracts.numberOfUsers ?? ''}
+            value={currentContract.numberOfUsers ?? ''}
             onChange={handleChange}
             className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
           />
@@ -1525,7 +1509,7 @@ const clientContractPayload = [{
 
      {/* Toggles */}
     <div className="bg-white rounded-xl shadow p-4 border">
-    <h2 className="text-lg font-semibold text-blue-800 mb-4">Status Flags</h2>
+    <h2 className="text-base font-semibold text-blue-800 mb-4">Status Flags</h2>
       <div className="flex flex-wrap justify-center gap-6">
         {toggleFields
           .filter(({ key }) => (toggleVisibilityMap[activeTopTab] ?? []).includes(key))
@@ -1556,7 +1540,7 @@ const clientContractPayload = [{
 
     {/* Training Days Section */}
     <div className="bg-white rounded-xl shadow p-4 border">
-      <h2 className="text-lg font-semibold text-blue-800 mb-4">Contract Mandays</h2>
+      <h2 className="text-base font-semibold text-blue-800 mb-4">Contract Mandays</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-4">
         {/* Training Days */}
         <div>
@@ -1564,7 +1548,7 @@ const clientContractPayload = [{
           <input
             type="number"
             name="training_days"
-            value={clientcontracts.training_days ?? ''}
+            value={currentContract.training_days ?? ''}
             onChange={handleChange}
             className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
           />
@@ -1574,11 +1558,12 @@ const clientContractPayload = [{
           <input
             type="number"
             name="training_days_consumed"
-            value={clientcontracts.training_days_consumed ?? ''}
+            value={currentContract.training_days_consumed ?? ''}
             onChange={handleChange}
             className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm"
           />
         </div>
+
 
         {/* Post Training Days */}
         <div>
@@ -1586,7 +1571,7 @@ const clientContractPayload = [{
           <input
             type="number"
             name="post_training_days"
-            value={clientcontracts.post_training_days ?? ''}
+            value={currentContract.post_training_days ?? ''}
             onChange={handleChange}
             className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
           />
@@ -1596,7 +1581,7 @@ const clientContractPayload = [{
           <input
             type="number"
             name="post_training_days_consumed"
-            value={clientcontracts.post_training_days_consumed ?? ''}
+            value={currentContract.post_training_days_consumed ?? ''}
             onChange={handleChange}
             className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm"
           />
@@ -1608,7 +1593,7 @@ const clientContractPayload = [{
           <input
             type="number"
             name="fs_generation_contract"
-            value={clientcontracts.fs_generation_contract ?? ''}
+            value={currentContract.fs_generation_contract ?? ''}
             onChange={handleChange}
             className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
           />
@@ -1618,7 +1603,7 @@ const clientContractPayload = [{
           <input
             type="number"
             name="fs_generation_consumed"
-            value={clientcontracts.fs_generation_consumed ?? ''}
+            value={currentContract.fs_generation_consumed ?? ''}
             onChange={handleChange}
             className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm"
           />
@@ -1638,18 +1623,18 @@ const clientContractPayload = [{
   <div className="p-4 space-y-6">
 
   {/* Contract Details + Toggles in One Row */}
-  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
     {/* Contract Section */}
-    <div className="bg-white rounded-xl shadow p-4 border">
-      <h2 className="text-lg font-semibold text-blue-800 mb-4">Contract Details</h2>
+    <div className="bg-white rounded-xl shadow p-4 border lg:col-span-2">
+      <h2 className="text-base font-semibold text-blue-800 mb-4">Contract Details</h2>
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Signed Contract Date</label>
           <input
             type="date"
             name="contract_date"
-            value={clientcontracts.contract_date ?? ''}
+            value={currentContract.contract_date ?? ''}
             onChange={handleChange}
             className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
           />
@@ -1659,7 +1644,7 @@ const clientContractPayload = [{
           <input
             type="date"
             name="sma_date"
-            value={clientcontracts.sma_date ?? ''}
+            value={currentContract.sma_date ?? ''}
             onChange={handleChange}
             className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
           />
@@ -1669,7 +1654,7 @@ const clientContractPayload = [{
           <input
             type="number"
             name="numberOfUsers"
-            value={clientcontracts.numberOfUsers ?? ''}
+            value={currentContract.numberOfUsers ?? ''}
             onChange={handleChange}
             className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
           />
@@ -1679,7 +1664,7 @@ const clientContractPayload = [{
           <input
             type="number"
             name="numberOfEmployees"
-            value={clientcontracts.numberOfEmployees ?? ''}
+            value={currentContract.numberOfEmployees ?? ''}
             onChange={handleChange}
             className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
           />
@@ -1688,8 +1673,8 @@ const clientContractPayload = [{
     </div>
 
      {/* Toggles */}
-    <div className="bg-white rounded-xl shadow p-4 border">
-    <h2 className="text-lg font-semibold text-blue-800 mb-4">Status Flags</h2>
+    <div className="bg-white rounded-xl shadow p-4 border lg:col-span-1">
+    <h2 className="text-base font-semibold text-blue-800 mb-4">Status Flags</h2>
       <div className="flex flex-wrap justify-center gap-6">
         {toggleFields
           .filter(({ key }) => (toggleVisibilityMap[activeTopTab] ?? []).includes(key))
@@ -1720,7 +1705,7 @@ const clientContractPayload = [{
 
     {/* Training Days Section */}
     <div className="bg-white rounded-xl shadow p-4 border">
-      <h2 className="text-lg font-semibold text-blue-800 mb-4">Contract Mandays</h2>
+      <h2 className="text-base font-semibold text-blue-800 mb-4">Contract Mandays</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         {/* Training Days */}
         <div>
@@ -1728,7 +1713,7 @@ const clientContractPayload = [{
           <input
             type="number"
             name="training_days"
-            value={clientcontracts.training_days ?? ''}
+            value={currentContract.training_days ?? ''}
             onChange={handleChange}
             className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
           />
@@ -1738,7 +1723,7 @@ const clientContractPayload = [{
           <input
             type="number"
             name="training_days_consumed"
-            value={clientcontracts.training_days_consumed ?? ''}
+            value={currentContract.training_days_consumed ?? ''}
             onChange={handleChange}
             className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm"
           />
@@ -1750,7 +1735,7 @@ const clientContractPayload = [{
           <input
             type="number"
             name="post_training_days"
-            value={clientcontracts.post_training_days ?? ''}
+            value={currentContract.post_training_days ?? ''}
             onChange={handleChange}
             className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
           />
@@ -1760,7 +1745,7 @@ const clientContractPayload = [{
           <input
             type="number"
             name="post_training_days_consumed"
-            value={clientcontracts.post_training_days_consumed ?? ''}
+            value={currentContract.post_training_days_consumed ?? ''}
             onChange={handleChange}
             className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm"
           />
@@ -1782,14 +1767,14 @@ const clientContractPayload = [{
 
     {/* Contract Section */}
     <div className="bg-white rounded-xl shadow p-4 border">
-      <h2 className="text-lg font-semibold text-blue-800 mb-4">Contract Details</h2>
+      <h2 className="text-base font-semibold text-blue-800 mb-4">Contract Details</h2>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Signed Contract Date</label>
           <input
             type="date"
             name="contract_date"
-            value={clientcontracts.contract_date ?? ''}
+            value={currentContract.contract_date ?? ''}
             onChange={handleChange}
             className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
           />
@@ -1799,7 +1784,7 @@ const clientContractPayload = [{
           <input
             type="date"
             name="sma_date"
-            value={clientcontracts.sma_date ?? ''}
+            value={currentContract.sma_date ?? ''}
             onChange={handleChange}
             className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
           />
@@ -1809,7 +1794,7 @@ const clientContractPayload = [{
           <input
             type="number"
             name="numberOfUsers"
-            value={clientcontracts.numberOfUsers ?? ''}
+            value={currentContract.numberOfUsers ?? ''}
             onChange={handleChange}
             className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
           />
@@ -1819,7 +1804,7 @@ const clientContractPayload = [{
 
      {/* Toggles */}
     <div className="bg-white rounded-xl shadow p-4 border">
-    <h2 className="text-lg font-semibold text-blue-800 mb-4">Status Flags</h2>
+    <h2 className="text-base font-semibold text-blue-800 mb-4">Status Flags</h2>
       <div className="flex flex-wrap justify-center gap-6">
         {toggleFields
           .filter(({ key }) => (toggleVisibilityMap[activeTopTab] ?? []).includes(key))
@@ -1850,7 +1835,7 @@ const clientContractPayload = [{
 
     {/* Training Days Section */}
     <div className="bg-white rounded-xl shadow p-4 border">
-      <h2 className="text-lg font-semibold text-blue-800 mb-4">Contract Mandays</h2>
+      <h2 className="text-base font-semibold text-blue-800 mb-4">Contract Mandays</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         {/* Training Days */}
         <div>
@@ -1858,7 +1843,7 @@ const clientContractPayload = [{
           <input
             type="number"
             name="training_days"
-            value={clientcontracts.training_days ?? ''}
+            value={currentContract.training_days ?? ''}
             onChange={handleChange}
             className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
           />
@@ -1868,7 +1853,7 @@ const clientContractPayload = [{
           <input
             type="number"
             name="training_days_consumed"
-            value={clientcontracts.training_days_consumed ?? ''}
+            value={currentContract.training_days_consumed ?? ''}
             onChange={handleChange}
             className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm"
           />
@@ -1880,7 +1865,7 @@ const clientContractPayload = [{
           <input
             type="number"
             name="post_training_days"
-            value={clientcontracts.post_training_days ?? ''}
+            value={currentContract.post_training_days ?? ''}
             onChange={handleChange}
             className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
           />
@@ -1890,7 +1875,7 @@ const clientContractPayload = [{
           <input
             type="number"
             name="post_training_days_consumed"
-            value={clientcontracts.post_training_days_consumed ?? ''}
+            value={currentContract.post_training_days_consumed ?? ''}
             onChange={handleChange}
             className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm"
           />
@@ -1913,14 +1898,14 @@ const clientContractPayload = [{
 
     {/* Contract Section */}
     <div className="bg-white rounded-xl shadow p-4 border">
-      <h2 className="text-lg font-semibold text-blue-800 mb-4">Contract Details</h2>
+      <h2 className="text-base font-semibold text-blue-800 mb-4">Contract Details</h2>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Signed Contract Date</label>
           <input
             type="date"
             name="contract_date"
-            value={clientcontracts.contract_date ?? ''}
+            value={currentContract.contract_date ?? ''}
             onChange={handleChange}
             className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
           />
@@ -1930,7 +1915,7 @@ const clientContractPayload = [{
           <input
             type="date"
             name="sma_date"
-            value={clientcontracts.sma_date ?? ''}
+            value={currentContract.sma_date ?? ''}
             onChange={handleChange}
             className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
           />
@@ -1940,7 +1925,7 @@ const clientContractPayload = [{
           <input
             type="number"
             name="numberOfUsers"
-            value={clientcontracts.numberOfUsers ?? ''}
+            value={currentContract.numberOfUsers ?? ''}
             onChange={handleChange}
             className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
           />
@@ -1950,7 +1935,7 @@ const clientContractPayload = [{
 
      {/* Toggles */}
     <div className="bg-white rounded-xl shadow p-4 border">
-    <h2 className="text-lg font-semibold text-blue-800 mb-4">Status Flags</h2>
+    <h2 className="text-base font-semibold text-blue-800 mb-4">Status Flags</h2>
       <div className="flex flex-wrap justify-center gap-6">
         {toggleFields
           .filter(({ key }) => (toggleVisibilityMap[activeTopTab] ?? []).includes(key))
@@ -1981,7 +1966,7 @@ const clientContractPayload = [{
 
     {/* Training Days Section */}
     <div className="bg-white rounded-xl shadow p-4 border">
-      <h2 className="text-lg font-semibold text-blue-800 mb-4">Contract Mandays</h2>
+      <h2 className="text-base font-semibold text-blue-800 mb-4">Contract Mandays</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         {/* Training Days */}
         <div>
@@ -1989,7 +1974,7 @@ const clientContractPayload = [{
           <input
             type="number"
             name="training_days"
-            value={clientcontracts.training_days ?? ''}
+            value={currentContract.training_days ?? ''}
             onChange={handleChange}
             className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
           />
@@ -1999,7 +1984,7 @@ const clientContractPayload = [{
           <input
             type="number"
             name="training_days_consumed"
-            value={clientcontracts.training_days_consumed ?? ''}
+            value={currentContract.training_days_consumed ?? ''}
             onChange={handleChange}
             className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm"
           />
@@ -2011,7 +1996,7 @@ const clientContractPayload = [{
           <input
             type="number"
             name="post_training_days"
-            value={clientcontracts.post_training_days ?? ''}
+            value={currentContract.post_training_days ?? ''}
             onChange={handleChange}
             className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
           />
@@ -2021,7 +2006,7 @@ const clientContractPayload = [{
           <input
             type="number"
             name="post_training_days_consumed"
-            value={clientcontracts.post_training_days_consumed ?? ''}
+            value={currentContract.post_training_days_consumed ?? ''}
             onChange={handleChange}
             className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm"
           />
@@ -2044,7 +2029,7 @@ const clientContractPayload = [{
 
           {/* Main Modules Card */}
           <div className="bg-white rounded-xl shadow p-4 border">
-            <h3 className="text-lg font-semibold text-blue-800 mb-4">Modules / Services</h3>
+            <h3 className="text-base font-semibold text-blue-800 mb-4">Modules / Services</h3>
             <div className="space-y-2">
               {currentMainModules.map((module) => (
                 <label key={module} className="flex items-center space-x-3">
@@ -2062,7 +2047,7 @@ const clientContractPayload = [{
 
           {/* Other Modules Card */}
           <div className="bg-white rounded-xl shadow p-4 border">
-            <h3 className="text-lg font-semibold text-blue-800 mb-4">Other Modules</h3>
+            <h3 className="text-base font-semibold text-blue-800 mb-4">Other Modules</h3>
             <div className="space-y-2">
               {currentOtherModules.map((module) => {
                 const isChecked = currentSelectedModules.includes(module);
@@ -2094,7 +2079,7 @@ const clientContractPayload = [{
 
           {/* Technicians Card */}
           <div className="bg-white rounded-xl shadow p-4 border">
-            <h3 className="text-lg font-semibold text-blue-800 mb-4">Technical Assigned</h3>
+            <h3 className="text-base font-semibold text-blue-800 mb-4">Technical Assigned</h3>
             <div className="space-y-3">
               {technicianInputs.map((tech, index) => {
                 const techValue = tech.includes(" (") ? tech.split(" (")[0] : tech;
@@ -2152,12 +2137,12 @@ const clientContractPayload = [{
 
 <div className="bg-white rounded-xl shadow p-4 border">
   <div className="flex items-center justify-start mb-4">
-    <h2 className="text-lg font-semibold text-blue-800 pr-2">HelpDesk Details  </h2>
+    <h2 className="text-base font-semibold text-blue-800 pr-2">HelpDesk Details  </h2>
     {!isEditingHelpdesk && (
       <button
         type="button"
         onClick={() => setIsEditingHelpdesk(true)}
-        className="text-lg text-blue-600 hover:underline whitespace-nowrap font-bold"
+        className="text-base text-blue-600 hover:underline whitespace-nowrap font-bold"
       >
          (Click to Edit URL)
       </button>
@@ -2211,7 +2196,7 @@ const clientContractPayload = [{
             onClick={handleSave}
             disabled={isSaving}
             className={`px-28 py-2 font-semibold rounded-lg shadow-md transition duration-300 ${
-              isSaving ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-800 text-white"
+              isSaving ? "bg-blue-700 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-800 text-white"
             }`}
           >
             {isSaving ? (
@@ -2299,7 +2284,7 @@ const clientContractPayload = [{
 </div>
 
 
-        {/* Tab Content */}
+        {/* Tab Content
         {activeTab === "Contact Information" && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 mt-6 p-4">
             {(client.contact_persons || ["", ""]).map((person, index) => (
@@ -2323,7 +2308,94 @@ const clientContractPayload = [{
 ))}
 
           </div>
-        )}
+        )} */}
+
+       {activeTab === "Contact Information" && (
+  <div className="flex flex-col gap-2 p-4">
+    <button
+  onClick={addNewContact}
+  className="mt-4 bg-blue-600 text-white font-bold px-4 py-2 rounded hover:bg-blue-800 transition justify-center
+             mx-auto md:mx-0 self-end"
+>
+  + Add Contact
+</button>
+{/* Header labels */}
+<div
+  className="
+    hidden md:grid 
+    md:grid-cols-[1fr_1fr_1fr_1fr_auto] 
+    gap-6
+    text-white 
+    font-semibold 
+    mt-2 
+    px-4 py-4
+    border-b border-gray-300
+    bg-blue-500
+    uppercase
+    text-sm
+    rounded-lg
+    tracking-wide
+  "
+>
+  <div>Contact Person</div>
+  <div>Position</div>
+  <div>Contact No.</div>
+  <div>Email</div>
+  <div></div> {/* delete button column */}
+</div>
+
+
+    {/* Contact inputs */}
+    {(client.contact_persons || []).map((person, index) => (
+      <div key={index} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_1fr_auto] gap-2 border p-2 rounded shadow-sm items-center bg-white text-sm">
+        <input
+          type="text"
+          value={person.contact_person || ''}
+          onChange={(e) => updateContactField(index, 'contact_person', e.target.value)}
+          placeholder="Contact Person"
+          className="p-2 border border-gray-300 rounded w-full shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+        />
+        <input
+          type="text"
+          value={person.position || ''}
+          onChange={(e) => updateContactField(index, 'position', e.target.value)}
+          placeholder="Position"
+          className="p-2 border border-gray-300 rounded w-full shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+        />
+        <input
+          type="text"
+          value={person.contact_no || ''}
+          onChange={(e) => updateContactField(index, 'contact_no', e.target.value)}
+          placeholder="Contact No."
+          className="p-2 border border-gray-300 rounded w-full shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+        />
+        <input
+          type="email"
+          value={person.email_add || ''}
+          onChange={(e) => updateContactField(index, 'email_add', e.target.value)}
+          placeholder="Email"
+          className="p-2 border border-gray-300 rounded w-full shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+        />
+        <div className="flex justify-center md:justify-end">
+          <button
+                        type="button"
+                        onClick={() => removeContact(index)}
+                        className="bg-red-600 text-white p-2 rounded hover:bg-red-700 w-full sm:w-9 h-9 flex items-center justify-center"
+                      >
+                        <FaMinus />
+                      </button>
+        </div>
+      </div>
+    ))}
+
+
+  </div>
+)}
+
+
+
+
+
 
         {activeTab === "Server Information" && (
   <>
@@ -2476,21 +2548,21 @@ const clientContractPayload = [{
                         className="p-2 bg-blue-100 text-blue-600 hover:bg-blue-200 rounded-full transition"
                         title="View"
                       >
-                        <FaEye className="text-lg" />
+                        <FaEye className="text-base" />
                       </button>
                       <button
                         onClick={() => handleDownloadFile(file)}
                         className="p-2 bg-green-100 text-green-600 hover:bg-green-200 rounded-full transition"
                         title="Download"
                       >
-                        <FaDownload className="text-lg" />
+                        <FaDownload className="text-base" />
                       </button>
                       <button
                         onClick={() => handleDeleteFile(file)}
                         className="p-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-full transition"
                         title="Delete"
                       >
-                        <FaTrash className="text-lg" />
+                        <FaTrash className="text-base" />
                       </button>
                     </div>
                   </td>
@@ -2557,21 +2629,21 @@ const clientContractPayload = [{
                     className="p-2 bg-blue-100 text-blue-600 hover:bg-blue-200 rounded-full transition"
                     title="View"
                   >
-                    <FaEye className="text-lg" />
+                    <FaEye className="text-base" />
                   </button>
                   <button
                     onClick={() => handleDownloadFile(file)}
                     className="p-2 bg-green-100 text-green-600 hover:bg-green-200 rounded-full transition"
                     title="Download"
                   >
-                    <FaDownload className="text-lg" />
+                    <FaDownload className="text-base" />
                   </button>
                   <button
                     onClick={() => handleDeleteFile(file)}
                     className="p-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-full transition"
                     title="Delete"
                   >
-                    <FaTrash className="text-lg" />
+                    <FaTrash className="text-base" />
                   </button>
                 </div>
               </td>
