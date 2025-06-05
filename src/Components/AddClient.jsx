@@ -367,7 +367,7 @@ useEffect(() => {
   const fetchClientFiles = async () => {
     try {
       const apiBase = process.env.NODE_ENV === 'development' 
-        ? 'http://127.0.0.1:8000/api' 
+        ? 'http://192.168.1.201:82/api' 
         : 'http://192.168.56.1:82/api';
 
       const [csResponse, toResponse, smaResponse] = await Promise.all([
@@ -406,7 +406,7 @@ useEffect(() => {
   setIsLoading(true);
 
   const apiBase = process.env.NODE_ENV === 'development' 
-    ? 'http://127.0.0.1:8000/api' 
+    ? 'http://192.168.1.201:82/api' 
     : 'http://192.168.56.1:82/api';
 
   try {
@@ -666,7 +666,7 @@ useEffect(() => {
   const handleFileSelect = async (files, uploadDate, signedDate) => {
   const getApiBase = () => {
     return process.env.NODE_ENV === 'development' 
-      ? 'http://127.0.0.1:8000/api' 
+      ? 'http://192.168.1.201:82/api' 
       : 'http://192.168.56.1:82/api';
   };
 
@@ -805,55 +805,39 @@ useEffect(() => {
 };
 
 const handleDeleteFile = async (file) => {
+  const result = await Swal.fire({
+    title: `Delete "${file.original_name}"?`,
+    text: "This action cannot be undone.",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    confirmButtonText: 'Yes, delete it!',
+    cancelButtonText: 'Cancel'
+  });
+
+  if (!result.isConfirmed) return;
+
   try {
-    const confirm = await Swal.fire({
-      title: 'Are you sure?',
-      text: "You won't be able to revert this!",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
-      confirmButtonText: 'Yes, delete it!'
-    });
-
-    if (!confirm.isConfirmed) return;
-
-    const apiBase = process.env.NODE_ENV === 'development' 
-      ? 'http://127.0.0.1:8000/api' 
-      : 'http://192.168.56.1:82/api';
-
-    const response = await axios.delete(`${apiBase}/file/${file.file_id}`, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      }
-    });
-
+    const response = await axios.delete(`http://192.168.1.201:82/api/files/${file.file_id}`);
     if (response.data.success) {
-      await Swal.fire(
-        'Deleted!',
-        'Your file has been deleted.',
-        'success'
-      );
-      fetchClientFiles(); // Refresh the file list
+      Swal.fire('Deleted!', response.data.message, 'success');
+      fetchClientFiles(); // Refresh list
     } else {
-      throw new Error(response.data.message || 'Delete failed');
+      Swal.fire('Error', response.data.message, 'error');
     }
   } catch (error) {
-    console.error('Delete error:', error);
-    Swal.fire({
-      icon: 'error',
-      title: 'Error',
-      text: error.response?.data?.message || `Error deleting file: ${error.message}`
-    });
+    console.error('Delete failed', error);
+    Swal.fire('Error', 'Failed to delete the file.', 'error');
   }
 };
+
+
 
   const handleViewFile = async (file) => {
 
     const getApiBase = () => {
-      return 'http://127.0.0.1:8000/api';
+      return 'http://192.168.1.201:82/api';
     };
 
     try {
@@ -886,7 +870,7 @@ const handleDeleteFile = async (file) => {
   
   const handleDownloadFile = async (file) => {
     const getApiBase = () => {
-      return 'http://127.0.0.1:8000/api';
+      return 'http://192.168.1.201:82/api';
     };
     
     try {
@@ -1232,7 +1216,7 @@ const clientContactPayload = (client.contact_persons || [])
 
 
     const apiBase = process.env.NODE_ENV === 'development'
-      ? 'http://127.0.0.1:8000/api'
+      ? 'http://192.168.1.201:82/api'
       : 'http://192.168.56.1:82/api';
 
     const response = await axios.post(`${apiBase}/client/save`, payload, {

@@ -6,14 +6,26 @@ const FileUpload = ({ isOpen, onClose, onFileSelect, isLoading }) => {
   const [signedDate, setSignedDate] = useState("");
 
   const handleFileChange = (e) => {
-    const newFiles = Array.from(e.target.files).map(file => ({
-      file,
-      name: file.name,
-      size: file.size,
-      type: file.type
-    }));
-    setFiles(newFiles);
-  };
+  const MAX_FILE_SIZE = 1024 * 1024 * 1024; // 1 GB in bytes
+
+  const newFiles = Array.from(e.target.files).map(file => ({
+    file,
+    name: file.name,
+    size: file.size,
+    type: file.type
+  }));
+
+  const tooLargeFiles = newFiles.filter(f => f.size > MAX_FILE_SIZE);
+
+  if (tooLargeFiles.length > 0) {
+    alert("One or more files exceed the 1 GB size limit and will not be uploaded.");
+  }
+
+  // Keep only files under 1 GB
+  const validFiles = newFiles.filter(f => f.size <= MAX_FILE_SIZE);
+
+  setFiles(validFiles);
+};
 
   const removeFile = (index) => {
     const updatedFiles = [...files];
