@@ -135,12 +135,21 @@ const [tabOtherModules, setTabOtherModules] = useState({
     "Importation",
     "Financing",
     "Leasing",
-    "BIR Tax Connect"
+    "BIR Tax Connect",
+    "Financials - With Customization/s"
   ],
 
   "HR-PAY": [
     "Employee Portal",
-    "Employee Portal Cloud",],
+    "Employee Portal Cloud",
+    "Payroll - With Customization/s"],
+
+  "REALTY": [
+    "Realty - With Customization/s"],
+
+  "WMS": [
+    "WMS - With Customization/s"],
+    
 
 });
 
@@ -224,6 +233,7 @@ const removeTechnicianInput = (index) => {
   client_code: "",
   client_name: "",
   main_address: "",
+  remarks: "",
   // contract_date: "",
   industry: "",
   remote_id: "",
@@ -495,6 +505,7 @@ useEffect(() => {
       client_code: clientData.client_code || '',
       client_name: clientData.client_name || '',
       main_address: clientData.main_address || '',
+      remarks: clientData.remarks || '',
       industry: clientData.industry || '',
       remote_id: clientData.remote_id || '',
       remote_pw: clientData.remote_pw || '',
@@ -1065,6 +1076,10 @@ const handleSave = async () => {
     'Outbound': 'OUTB',
     'Other Activities': 'OTH',
     'Billing': 'AR',
+    'Financials - With Customization/s': 'FINCustom',
+    'Payroll - With Customization/s': 'HRCustom',
+    'WMS - With Customization/s': 'WMSCustom',
+    'Realty - With Customization/s': 'REALTYCustom',
   };
 
   try {
@@ -1201,6 +1216,7 @@ const clientContactPayload = (client.contact_persons || [])
       client_code: client.client_code,
       client_name: client.client_name,
       main_address: client.main_address,
+      remarks: client.remarks,
       industry: client.industry,
       remote_id: client.remote_id,
       remote_pw: client.remote_pw,
@@ -1300,13 +1316,20 @@ const currentContract = clientcontracts[activeTopTab]?.[0] || {};
 
       {/* Loading Overlay */}
       {isLoading && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-4 rounded-lg shadow-lg flex flex-col items-center">
-            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-800 mb-4"></div>
-            <p className="text-gray-700">Loading client data...</p>
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 backdrop-blur-sm">
+        <div className="bg-white p-6 rounded-2xl shadow-2xl flex flex-col items-center gap-4 w-64 animate-fade-in">
+          {/* Spinner */}
+          <div className="relative h-12 w-12">
+            <div className="absolute inset-0 rounded-full border-4 border-blue-800 border-t-transparent animate-spin"></div>
+            <div className="absolute inset-1 bg-white rounded-full"></div>
           </div>
+          
+          {/* Loading Text */}
+          <p className="text-gray-800 text-center text-base font-medium">Loading client data...</p>
         </div>
-      )}
+      </div>
+    )}
+
 
       {/* File Upload Modal */}
       <FileUpload
@@ -1425,6 +1448,18 @@ const currentContract = clientcontracts[activeTopTab]?.[0] || {};
             type="text"
             name="main_address"
             value={client.main_address || ""}
+            onChange={handleChange}
+            className="mt-1 p-2 border border-gray-300 rounded-lg w-full h-[80px] text-sm"
+          />
+        </div>
+
+        {/* Address */}
+        <div className="mb-4 text-sm">
+          <label className="block font-bold text-gray-800 mb-2 text-sm">Remarks</label>
+          <textarea
+            type="text"
+            name="remarks"
+            value={client.remarks || ""}
             onChange={handleChange}
             className="mt-1 p-2 border border-gray-300 rounded-lg w-full h-[80px] text-sm"
           />

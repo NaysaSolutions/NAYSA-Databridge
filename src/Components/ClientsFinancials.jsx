@@ -185,9 +185,20 @@ const currentItems = Array.isArray(filteredClients)
   </div>
 
   {/* Loading */}
-  {loading ? (
-    <p className="text-center text-gray-500">Loading clients...</p>
-  ) : (
+      {loading ? (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 backdrop-blur-sm">
+        <div className="bg-white p-6 rounded-2xl shadow-2xl flex flex-col items-center gap-4 w-64 animate-fade-in">
+          {/* Spinner */}
+          <div className="relative h-12 w-12">
+            <div className="absolute inset-0 rounded-full border-4 border-blue-800 border-t-transparent animate-spin"></div>
+            <div className="absolute inset-1 bg-white rounded-full"></div>
+          </div>
+          
+          {/* Loading Text */}
+          <p className="text-gray-800 text-center text-base font-medium">Loading clients...</p>
+        </div>
+      </div>
+    ) : (
     <div className="bg-white shadow-lg rounded-xl overflow-hidden">
       <div className="max-h-[70vh] overflow-y-auto">
         <table className="w-full text-xs text-center">
