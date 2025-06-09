@@ -134,7 +134,8 @@ const [tabOtherModules, setTabOtherModules] = useState({
     "Production",
     "Importation",
     "Financing",
-    "Leasing"
+    "Leasing",
+    "BIR Tax Connect"
   ],
 
   "HR-PAY": [
@@ -367,7 +368,7 @@ useEffect(() => {
   const fetchClientFiles = async () => {
     try {
       const apiBase = process.env.NODE_ENV === 'development' 
-        ? 'http://192.168.1.201:82/api' 
+        ? 'http://127.0.0.1:8000/api' 
         : 'http://192.168.56.1:82/api';
 
       const [csResponse, toResponse, smaResponse] = await Promise.all([
@@ -406,7 +407,7 @@ useEffect(() => {
   setIsLoading(true);
 
   const apiBase = process.env.NODE_ENV === 'development' 
-    ? 'http://192.168.1.201:82/api' 
+    ? 'http://127.0.0.1:8000/api' 
     : 'http://192.168.56.1:82/api';
 
   try {
@@ -666,7 +667,7 @@ useEffect(() => {
   const handleFileSelect = async (files, uploadDate, signedDate) => {
   const getApiBase = () => {
     return process.env.NODE_ENV === 'development' 
-      ? 'http://192.168.1.201:82/api' 
+      ? 'http://127.0.0.1:8000/api' 
       : 'http://192.168.56.1:82/api';
   };
 
@@ -819,7 +820,7 @@ const handleDeleteFile = async (file) => {
   if (!result.isConfirmed) return;
 
   try {
-    const response = await axios.delete(`http://192.168.1.201:82/api/files/${file.file_id}`);
+    const response = await axios.delete(`http://127.0.0.1:8000/api/files/${file.file_id}`);
     if (response.data.success) {
       Swal.fire('Deleted!', response.data.message, 'success');
       fetchClientFiles(); // Refresh list
@@ -837,7 +838,7 @@ const handleDeleteFile = async (file) => {
   const handleViewFile = async (file) => {
 
     const getApiBase = () => {
-      return 'http://192.168.1.201:82/api';
+      return 'http://127.0.0.1:8000/api';
     };
 
     try {
@@ -870,7 +871,7 @@ const handleDeleteFile = async (file) => {
   
   const handleDownloadFile = async (file) => {
     const getApiBase = () => {
-      return 'http://192.168.1.201:82/api';
+      return 'http://127.0.0.1:8000/api';
     };
     
     try {
@@ -1045,6 +1046,7 @@ const handleSave = async () => {
     'MS Inventory': 'MSINV',
     'RM Inventory': 'RMINV',
     'VE Inventory': 'VEINV',
+    'VE Inventory': 'VEINV',
     'Fixed Assets': 'FA',
     'Budget': 'BUD',
     'Bank Recon': 'BR',
@@ -1052,6 +1054,7 @@ const handleSave = async () => {
     'Importation': 'IMP',
     'Financing': 'FIN',
     'Leasing': 'LS',
+    'BIR Tax Connect': 'TC',
     'HR Management and Payroll': 'HRPAY',
     'HR Information System': 'HRIS',
     'Employee Portal': 'HRPortal',
@@ -1216,7 +1219,7 @@ const clientContactPayload = (client.contact_persons || [])
 
 
     const apiBase = process.env.NODE_ENV === 'development'
-      ? 'http://192.168.1.201:82/api'
+      ? 'http://127.0.0.1:8000/api'
       : 'http://192.168.56.1:82/api';
 
     const response = await axios.post(`${apiBase}/client/save`, payload, {
