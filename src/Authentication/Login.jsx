@@ -67,7 +67,7 @@ const handleSubmit = async (e) => {
                 <div className="absolute inset-0 rounded-3xl" style={{ backgroundColor: '#5882C1', opacity: 0.5, zIndex: 0 }}></div>
     
                 <div className="relative z-10">
-                    <img src="public/naysa_logo.png" alt="Logo" className="w-200 h-20 mb-3" />
+                    <img src="naysa_logo.png" alt="Logo" className="w-200 h-20 mb-3" />
                     
                     <h2 className="text-white m-1" style={{ fontFamily: 'SF Pro Rounded, sans-serif' }}>
                         NAYSA Databridge

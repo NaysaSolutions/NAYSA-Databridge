@@ -1,9 +1,7 @@
 // utils/api.js
 import axios from "axios";
 
-const BASE_URL = process.env.NODE_ENV === 'development'
-  ? "http://127.0.0.1:8000/api"
-  : "http://192.168.56.1:82/api";
+const BASE_URL = "http://192.168.1.15:82/api";
 
 const axiosInstance = axios.create({
   baseURL: BASE_URL,

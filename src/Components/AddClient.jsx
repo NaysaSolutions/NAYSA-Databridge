@@ -381,9 +381,7 @@ useEffect(() => {
 
   const fetchClientFiles = async () => {
     try {
-      const apiBase = process.env.NODE_ENV === 'development' 
-        ? 'http://127.0.0.1:8000/api' 
-        : 'http://192.168.56.1:82/api';
+      const apiBase = 'http://192.168.1.15:82/api';
 
       const [csResponse, toResponse, smaResponse] = await Promise.all([
         fetch(`${apiBase}/client-files/${client.client_code}/clientService`, {
@@ -420,9 +418,7 @@ useEffect(() => {
   console.log('[fetchClientData] Fetching data for client:', clientCode, appType);
   setIsLoading(true);
 
-  const apiBase = process.env.NODE_ENV === 'development' 
-    ? 'http://127.0.0.1:8000/api' 
-    : 'http://192.168.56.1:82/api';
+  const apiBase = 'http://192.168.1.15:82/api';
 
   try {
     const token = localStorage.getItem('token');
@@ -576,9 +572,7 @@ useEffect(() => {
 
 const fetchDefaultClientCode = async () => {
   try {
-    const apiBase = process.env.NODE_ENV === 'development' 
-      ? 'http://127.0.0.1:8000/api' 
-      : 'http://192.168.56.1:82/api';
+    const apiBase = 'http://192.168.1.15:82/api';
 
     const response = await fetch(`${apiBase}/clients/default-code`, {
       headers: {
@@ -710,11 +704,9 @@ useEffect(() => {
   };
 
   const handleFileSelect = async (files, uploadDate, signedDate) => {
-  const getApiBase = () => {
-    return process.env.NODE_ENV === 'development' 
-      ? 'http://127.0.0.1:8000/api' 
-      : 'http://192.168.56.1:82/api';
-  };
+
+    const apiBase = 'http://192.168.1.15:82/api';
+
 
   if (files.length === 0) return { success: false, message: 'No files selected' };
   
@@ -754,7 +746,7 @@ useEffect(() => {
     for (const fileObj of files) {
       const file = fileObj.file;
       
-      const idResponse = await fetch(`${getApiBase()}/generate-id`, {
+      const idResponse = await fetch(`${apiBase}/generate-id`, {
         method: 'GET',
         headers: { 
           'Accept': 'application/json',
@@ -780,7 +772,7 @@ useEffect(() => {
       formData.append('upload_date', uploadDate);
       formData.append('signed_date', signedDate || null);
 
-      const uploadResponse = await fetch(`${getApiBase()}/upload`, {
+      const uploadResponse = await fetch(`${apiBase}/upload`, {
         method: 'POST',
         body: formData,
         headers: {
@@ -865,7 +857,7 @@ const handleDeleteFile = async (file) => {
   if (!result.isConfirmed) return;
 
   try {
-    const response = await axios.delete(`http://127.0.0.1:8000/api/files/${file.file_id}`);
+    const response = await axios.delete(`http://192.168.1.15:82/api/files/${file.file_id}`);
     if (response.data.success) {
       Swal.fire('Deleted!', response.data.message, 'success');
       fetchClientFiles(); // Refresh list
@@ -883,7 +875,7 @@ const handleDeleteFile = async (file) => {
   const handleViewFile = async (file) => {
 
     const getApiBase = () => {
-      return 'http://127.0.0.1:8000/api';
+      return 'http://192.168.1.15:82/api';
     };
 
     try {
@@ -916,7 +908,7 @@ const handleDeleteFile = async (file) => {
   
   const handleDownloadFile = async (file) => {
     const getApiBase = () => {
-      return 'http://127.0.0.1:8000/api';
+      return 'http://192.168.1.15:82/api';
     };
     
     try {
@@ -1035,13 +1027,6 @@ const handleDeleteFile = async (file) => {
     }));
   }
 };
-
-
-
-
-
-
-
 
   const handlePassword = async (e) => {
   const { name, value } = e.target;
@@ -1271,9 +1256,7 @@ const clientContactPayload = (client.contact_persons || [])
 };
 
 
-    const apiBase = process.env.NODE_ENV === 'development'
-      ? 'http://127.0.0.1:8000/api'
-      : 'http://192.168.56.1:82/api';
+    const apiBase = 'http://192.168.1.15:82/api';
 
     const response = await axios.post(`${apiBase}/client/save`, payload, {
       headers: {
