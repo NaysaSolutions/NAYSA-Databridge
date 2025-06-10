@@ -207,7 +207,8 @@ const ClientsInformation = () => {
         <h2 className="text-2xl font-bold text-gray-800">Clients Information</h2>
         <button
           className="bg-blue-700 text-white px-4 py-2 rounded-full hover:bg-blue-900 transition"
-          onClick={() => setShowAddClientForm(true)}
+          // onClick={() => setShowAddClientForm(true)}
+          onClick={() => navigate("/Addclients")}
         >
           <FontAwesomeIcon icon={faPlus} /> Add New Client
         </button>
@@ -335,6 +336,7 @@ const ClientsInformation = () => {
                     key={index}
                     className="bg-white hover:bg-blue-50 transition cursor-pointer"
                     onClick={() => navigate("/Addclients", { state: client })}
+                    title="Click to View Document"
                   >
                     {/* Basic info */}
                     {basicColumns.map(({ key }) => (

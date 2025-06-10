@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import AddClientForm from "./AddClient";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faBell, faUser, faSignOutAlt, faSort, faSortUp, faSortDown, faPlus } from "@fortawesome/free-solid-svg-icons";
+import { faBell, faUser, faSignOutAlt, faSort, faSortUp, faSortDown, faPlus, faFolderOpen } from "@fortawesome/free-solid-svg-icons";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../Authentication/AuthContext";
 import { PostAPI  } from "../api";
@@ -16,7 +16,7 @@ const ClientsFinancials = () => {
   const [showAddClientForm, setShowAddClientForm] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const itemsPerPage = 50;
+  const itemsPerPage = 100;
 
   // Sorting state
   const [sortConfig, setSortConfig] = useState({
@@ -178,7 +178,8 @@ const currentItems = Array.isArray(filteredClients)
     <h2 className="text-2xl font-bold text-gray-800">Clients Information (Financials)</h2>
     <button
       className="bg-blue-700 text-white px-4 py-2 rounded-full hover:bg-blue-900 transition"
-      onClick={() => setShowAddClientForm(true)}
+      // onClick={() => setShowAddClientForm(true)}
+      onClick={() => navigate("/Addclients")}
     >
               <FontAwesomeIcon icon={faPlus} /> Add New Client
     </button>
@@ -251,7 +252,11 @@ const currentItems = Array.isArray(filteredClients)
           </thead>
           <tbody className="divide-y divide-gray-200">
             {currentItems.map((client, index) => (
-              <tr key={index} className="bg-white hover:bg-blue-50 transition">
+              <tr key={index} 
+                  className="bg-white hover:bg-blue-50 transition cursor-pointer"
+                  onClick={() => navigate("/Addclients", { state: client })}
+                  title="Click to View Document"
+              >
                 <td className="px-2 py-2 border text-left text-blue-800">{client.client_code}</td>
                 <td className="px-2 py-2 w-[300px] border text-left">{client.client_name}</td>
                 <td className="px-2 py-2 border">
@@ -282,7 +287,7 @@ const currentItems = Array.isArray(filteredClients)
                     className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-800 transition"
                     onClick={() => navigate("/Addclients", { state: client })}
                   >
-                    View
+                  <FontAwesomeIcon icon={faFolderOpen} />
                   </button>
                 </td>
               </tr>

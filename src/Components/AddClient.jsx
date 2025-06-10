@@ -135,6 +135,7 @@ const [tabOtherModules, setTabOtherModules] = useState({
     "Importation",
     "Financing",
     "Leasing",
+    "Project Accounting",
     "BIR Tax Connect",
     "Financials - With Customization/s"
   ],
@@ -342,6 +343,9 @@ useEffect(() => {
       .catch(error => {
         console.error('Error fetching client data in useEffect:', error);
       });
+  } else {
+    // No location state? Fetch default client code
+    fetchDefaultClientCode();
   }
 }, [location.state, activeTopTab]);
 
@@ -531,6 +535,7 @@ useEffect(() => {
         fs_live: c.fs_live || 'N',
         active: c.active || 'N',
         sma_days: Number(c.sma_days) || 0,
+        sma_consumed: Number(c.sma_consumed) || 0,
       }))
     };
 
@@ -565,6 +570,34 @@ useEffect(() => {
     throw error;
   } finally {
     setIsLoading(false);
+  }
+};
+
+
+const fetchDefaultClientCode = async () => {
+  try {
+    const apiBase = process.env.NODE_ENV === 'development' 
+      ? 'http://127.0.0.1:8000/api' 
+      : 'http://192.168.56.1:82/api';
+
+    const response = await fetch(`${apiBase}/clients/default-code`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+
+    const data = await response.json();
+
+    if (data.success && data.client_code) {
+      setClient(prev => ({
+        ...prev,
+        client_code: data.client_code
+      }));
+    } else {
+      console.error('Failed to get default client code:', data.error);
+    }
+  } catch (error) {
+    console.error('Error fetching default client code:', error);
   }
 };
 
@@ -620,7 +653,8 @@ const handleToggle = (key) => {
       numberOfEmployees: 0,
       contract_date: '',
       sma_date: '',
-      sma_days: 0
+      sma_days: 0,
+      sma_consumed: 0
     }];
 
     const updatedContract = {
@@ -938,7 +972,8 @@ const handleDeleteFile = async (file) => {
     'with_sma',
     'fs_live',
     'active',
-    'sma_days'
+    'sma_days',
+    'sma_consumed'
   ];
 
   if (contractFields.includes(name)) {
@@ -950,23 +985,24 @@ const handleDeleteFile = async (file) => {
         with_sma: "N",
         fs_live: "N",
         active: "N",
-        training_days: 0,
-        training_days_consumed: 0,
-        post_training_days: 0,
-        post_training_days_consumed: 0,
-        fs_generation_contract: 0,
-        fs_generation_consumed: 0,
-        numberOfUsers: 0,
-        numberOfEmployees: 0,
+        training_days: "",
+        training_days_consumed: "",
+        post_training_days: "",
+        post_training_days_consumed: "",
+        fs_generation_contract: "",
+        fs_generation_consumed: "",
+        numberOfUsers: "",
+        numberOfEmployees: "",
         contract_date: '',
         sma_date: '',
-        sma_days: 0
+        sma_days: "",
+        sma_consumed: ""
       }];
 
       let updatedValue = value;
 
       // Convert numeric fields to numbers
-      if (['training_days', 'training_days_consumed', 'post_training_days', 'post_training_days_consumed', 'fs_generation_contract', 'fs_generation_consumed', 'numberOfUsers', 'numberOfEmployees', 'sma_days'].includes(name)) {
+      if (['training_days', 'training_days_consumed', 'post_training_days', 'post_training_days_consumed', 'fs_generation_contract', 'fs_generation_consumed', 'numberOfUsers', 'numberOfEmployees', 'sma_days', 'sma_consumed'].includes(name)) {
         updatedValue = Number(value);
       }
 
@@ -1057,7 +1093,6 @@ const handleSave = async () => {
     'MS Inventory': 'MSINV',
     'RM Inventory': 'RMINV',
     'VE Inventory': 'VEINV',
-    'VE Inventory': 'VEINV',
     'Fixed Assets': 'FA',
     'Budget': 'BUD',
     'Bank Recon': 'BR',
@@ -1065,6 +1100,7 @@ const handleSave = async () => {
     'Importation': 'IMP',
     'Financing': 'FIN',
     'Leasing': 'LS',
+    "Project Accounting": 'PRJ',
     'BIR Tax Connect': 'TC',
     'HR Management and Payroll': 'HRPAY',
     'HR Information System': 'HRIS',
@@ -1197,6 +1233,7 @@ const clientContactPayload = (client.contact_persons || [])
       fs_live: togglesToContract.fs_live,
       active: togglesToContract.active,
       sma_days: Number(currentContract.sma_days) || 0,
+      sma_consumed: Number(currentContract.sma_consumed) || 0,
     }];
 
     // Log payload for debugging
@@ -1392,24 +1429,32 @@ const currentContract = clientcontracts[activeTopTab]?.[0] || {};
       </button>
 
       {/* Title */}
-      <h1 className="text-2xl font-semibold mb-6">
-        {isViewMode ? "Client Information" : "Add New Client Information"}
-      </h1>
+      <div className="sticky top-0 z-50 bg-blue-600 shadow-xl p-6 mb-6 rounded-lg text-white">
+        <h1 className="text-2xl font-semibold">
+          {isViewMode
+            ? `Client Information${client.client_name ? `: ${client.client_name}` : ""}`
+            : "Add New Client Information"}
+        </h1>
+      </div>
+
+
 
       <div className="bg-white shadow-xl p-6 rounded-lg">
         {/* Basic Client Info */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 text-sm">
-          <div>
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-4 text-sm">
+          <div className="md:col-span-1">
             <label className="block font-bold text-gray-800 mb-2">Client Code</label>
             <input
               type="text"
               name="client_code"
               value={client.client_code || ""}
               onChange={handleChange}
-              className="mt-1 p-2 border border-gray-300 rounded-lg w-full"
+              disabled
+              className="mt-1 p-2 border border-gray-300 rounded-lg w-full bg-gray-100 text-gray-500 cursor-not-allowed"
             />
           </div>
-          <div>
+          
+          <div className="md:col-span-5">
             <label className="block font-bold text-gray-800 mb-2 text-sm">Client Name</label>
             <input
               type="text"
@@ -1419,7 +1464,11 @@ const currentContract = clientcontracts[activeTopTab]?.[0] || {};
               className="mt-1 p-2 border border-gray-300 rounded-lg w-full"
             />
           </div>
-          <div>
+
+        </div>
+
+
+          <div className="mb-4 text-sm">
             <label className="block font-bold text-gray-800 mb-2 text-sm">Industry</label>
             <select
               name="industry"
@@ -1439,7 +1488,6 @@ const currentContract = clientcontracts[activeTopTab]?.[0] || {};
               <option value="Hospitality">Hospitality</option>
             </select>
           </div>
-        </div>
 
         {/* Address */}
         <div className="mb-4 text-sm">
@@ -1453,7 +1501,7 @@ const currentContract = clientcontracts[activeTopTab]?.[0] || {};
           />
         </div>
 
-        {/* Address */}
+        {/* Remarks */}
         <div className="mb-4 text-sm">
           <label className="block font-bold text-gray-800 mb-2 text-sm">Remarks</label>
           <textarea
@@ -1489,86 +1537,105 @@ const currentContract = clientcontracts[activeTopTab]?.[0] || {};
   {activeTopTab === "FINANCIALS" && (
   <div className="p-4 space-y-6">
 
-  {/* Contract Details + Toggles in One Row */}
-  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+ {/* Contract Details + Toggles in One Row */}
+<div className="flex flex-col lg:flex-row gap-6">
 
-    {/* Contract Section */}
-    <div className="bg-white rounded-xl shadow p-4 border">
-      <h2 className="text-base font-semibold text-blue-800 mb-4">Contract Details</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Signed Contract Date</label>
-          <input
-            type="date"
-            name="contract_date"
-            value={currentContract.contract_date ?? ''}
-            onChange={handleChange}
-            className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">SMA Renewal Date</label>
-          <input
-            type="date"
-            name="sma_date"
-            value={currentContract.sma_date ?? ''}
-            onChange={handleChange}
-            className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">No. of Users</label>
-          <input
-            type="number"
-            name="numberOfUsers"
-            value={currentContract.numberOfUsers ?? ''}
-            onChange={handleChange}
-            className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
-          />
-        </div>
+  {/* Contract Section */}
+  <div className="flex-2 bg-white rounded-xl shadow p-4 border">
+    <h2 className="text-base font-semibold text-blue-800 mb-4">Contract Details</h2>
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Signed Contract Date</label>
+        <input
+          type="date"
+          name="contract_date"
+          value={currentContract.contract_date ?? ''}
+          onChange={handleChange}
+          className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">No. of Users</label>
+        <input
+          type="number"
+          placeholder="0.00"
+          name="numberOfUsers"
+          value={currentContract.numberOfUsers ?? ''}
+          onChange={handleChange}
+          className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
+        />
       </div>
     </div>
+  </div>
 
-     {/* Toggles */}
-    <div className="bg-white rounded-xl shadow p-4 border">
+  {/* SMA Info */}
+  <div className="flex-1 bg-white rounded-xl shadow p-4 border">
+    <h2 className="text-base font-semibold text-blue-800 mb-4">SMA Information</h2>
+    <div className="grid grid-cols-1 sm:grid-cols-1 xl:grid-cols-1 gap-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">SMA Renewal Date</label>
+        <input
+          type="date"
+          name="sma_date"
+          value={currentContract.sma_date ?? ''}
+          onChange={handleChange}
+          className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
+        />
+      </div>
+      {/* <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">SMA Days</label>
+        <input
+          type="number"
+          placeholder="0.00"
+          name="sma_days"
+          value={currentContract.sma_days ?? ''}
+          onChange={handleChange}
+          className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
+        />
+      </div> */}
+    </div>
+  </div>
+
+  {/* Toggles */}
+  <div className="w-full lg:w-1/3 bg-white rounded-xl shadow p-4 border">
     <h2 className="text-base font-semibold text-blue-800 mb-4">Status Flags</h2>
-      <div className="flex flex-wrap justify-center gap-6">
-        {toggleFields
-          .filter(({ key }) => (toggleVisibilityMap[activeTopTab] ?? []).includes(key))
-          .map(({ label, key }) => (
-            <div key={key} className="flex flex-col items-center w-20">
-              <span className="text-sm font-medium text-gray-600 text-center">{label}</span>
-              <button
-                className={`relative w-10 h-6 transition duration-200 ease-in-out rounded-full ${
-                  toggles[activeTopTab]?.[key] ? 'bg-blue-500' : 'bg-gray-300'
+    <div className="flex flex-wrap justify-center gap-2">
+      {toggleFields
+        .filter(({ key }) => (toggleVisibilityMap[activeTopTab] ?? []).includes(key))
+        .map(({ label, key }) => (
+          <div key={key} className="flex flex-col items-center w-20">
+            <span className="text-sm font-medium text-gray-600 text-center">{label}</span>
+            <button
+              className={`relative w-10 h-6 transition duration-200 ease-in-out rounded-full ${
+                toggles[activeTopTab]?.[key] ? 'bg-blue-500' : 'bg-gray-300'
+              }`}
+              onClick={() => handleToggle(key)}
+            >
+              <span
+                className={`absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                  toggles[activeTopTab]?.[key] ? 'translate-x-4' : ''
                 }`}
-                onClick={() => handleToggle(key)}
-              >
-                <span
-                  className={`absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform ${
-                    toggles[activeTopTab]?.[key] ? 'translate-x-4' : ''
-                  }`}
-                />
-              </button>
-            </div>
-          ))}
-      </div>
+              />
+            </button>
+          </div>
+        ))}
     </div>
+  </div>
 
+</div>
 
-
-    </div>
 
 
     {/* Training Days Section */}
     <div className="bg-white rounded-xl shadow p-4 border">
       <h2 className="text-base font-semibold text-blue-800 mb-4">Contract Mandays</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         {/* Training Days */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Training Days</label>
           <input
             type="number"
+            placeholder="0.00"
             name="training_days"
             value={currentContract.training_days ?? ''}
             onChange={handleChange}
@@ -1579,29 +1646,46 @@ const currentContract = clientcontracts[activeTopTab]?.[0] || {};
           <label className="block text-sm font-bold text-blue-700 mb-1">(Consumed)</label>
           <input
             type="number"
+            placeholder="0.00"
             name="training_days_consumed"
             value={currentContract.training_days_consumed ?? ''}
             onChange={handleChange}
             className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm"
           />
         </div>
+                <div>
+          <label className="block text-sm font-bold text-blue-700 mb-1">Balance</label>
+          <input
+            type="number"
+            placeholder="0.00"
+            value={
+              (currentContract.training_days || 0) -
+              (currentContract.training_days_consumed || 0)
+            }
+            readOnly
+            className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm bg-gray-100 text-gray-600"
+          />
+        </div>
 
 
-        {/* Post Training Days */}
+       {/* Post Training Days */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Post Training Days</label>
           <input
             type="number"
+            placeholder="0.00"
             name="post_training_days"
             value={currentContract.post_training_days ?? ''}
             onChange={handleChange}
             className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
           />
         </div>
+
         <div>
           <label className="block text-sm font-bold text-blue-700 mb-1">(Consumed)</label>
           <input
             type="number"
+            placeholder="0.00"
             name="post_training_days_consumed"
             value={currentContract.post_training_days_consumed ?? ''}
             onChange={handleChange}
@@ -1609,11 +1693,27 @@ const currentContract = clientcontracts[activeTopTab]?.[0] || {};
           />
         </div>
 
+        <div>
+          <label className="block text-sm font-bold text-blue-700 mb-1">Balance</label>
+          <input
+            type="number"
+            placeholder="0.00"
+            value={
+              (currentContract.post_training_days || 0) -
+              (currentContract.post_training_days_consumed || 0)
+            }
+            readOnly
+            className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm bg-gray-100 text-gray-600"
+          />
+        </div>
+
+
         {/* FS Generation */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">FS Generation</label>
           <input
             type="number"
+            placeholder="0.00"
             name="fs_generation_contract"
             value={currentContract.fs_generation_contract ?? ''}
             onChange={handleChange}
@@ -1624,12 +1724,65 @@ const currentContract = clientcontracts[activeTopTab]?.[0] || {};
           <label className="block text-sm font-bold text-blue-700 mb-1">(Consumed)</label>
           <input
             type="number"
+            placeholder="0.00"
             name="fs_generation_consumed"
             value={currentContract.fs_generation_consumed ?? ''}
             onChange={handleChange}
             className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm"
           />
         </div>
+        <div>
+          <label className="block text-sm font-bold text-blue-700 mb-1">Balance</label>
+          <input
+            type="number"
+            placeholder="0.00"
+            value={
+              (currentContract.fs_generation_contract || 0) -
+              (currentContract.fs_generation_consumed || 0)
+            }
+            readOnly
+            className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm bg-gray-100 text-gray-600"
+          />
+        </div>
+
+        {/* SMA Days */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">SMA Days</label>
+          <input
+            type="number"
+            placeholder="0.00"
+            name="sma_days"
+            value={currentContract.sma_days ?? ''}
+            onChange={handleChange}
+            // readOnly
+            className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-bold text-blue-700 mb-1">(Consumed)</label>
+          <input
+            type="number"
+            placeholder="0.00"
+            name="sma_consumed"
+            value={currentContract.sma_consumed ?? ''}
+            onChange={handleChange}
+            className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm"
+          />
+        </div>
+          <div>
+          <label className="block text-sm font-bold text-blue-700 mb-1">Balance</label>
+          <input
+            type="number"
+            placeholder="0.00"
+            value={
+              (currentContract.sma_days || 0) -
+              (currentContract.sma_consumed || 0)
+            }
+            readOnly
+            className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm bg-gray-100 text-gray-600"
+          />
+        </div>
+
       </div>
     </div>
 
@@ -1644,96 +1797,116 @@ const currentContract = clientcontracts[activeTopTab]?.[0] || {};
   {activeTopTab === "HR-PAY" && (
   <div className="p-4 space-y-6">
 
-  {/* Contract Details + Toggles in One Row */}
-  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-    {/* Contract Section */}
-    <div className="bg-white rounded-xl shadow p-4 border lg:col-span-2">
-      <h2 className="text-base font-semibold text-blue-800 mb-4">Contract Details</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Signed Contract Date</label>
-          <input
-            type="date"
-            name="contract_date"
-            value={currentContract.contract_date ?? ''}
-            onChange={handleChange}
-            className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">SMA Renewal Date</label>
-          <input
-            type="date"
-            name="sma_date"
-            value={currentContract.sma_date ?? ''}
-            onChange={handleChange}
-            className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">No. of Users</label>
-          <input
-            type="number"
-            name="numberOfUsers"
-            value={currentContract.numberOfUsers ?? ''}
-            onChange={handleChange}
-            className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">No. of Employees</label>
-          <input
-            type="number"
-            name="numberOfEmployees"
-            value={currentContract.numberOfEmployees ?? ''}
-            onChange={handleChange}
-            className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
-          />
-        </div>
+ {/* Contract Details + Toggles in One Row */}
+<div className="flex flex-col lg:flex-row gap-6">
+
+  {/* Contract Section */}
+  <div className="flex-2 bg-white rounded-xl shadow p-4 border">
+    <h2 className="text-base font-semibold text-blue-800 mb-4">Contract Details</h2>
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Signed Contract Date</label>
+        <input
+          type="date"
+          name="contract_date"
+          value={currentContract.contract_date ?? ''}
+          onChange={handleChange}
+          className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">No. of Users</label>
+        <input
+          type="number"
+          placeholder="0.00"
+          name="numberOfUsers"
+          value={currentContract.numberOfUsers ?? ''}
+          onChange={handleChange}
+          className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">No. of Employees</label>
+        <input
+          type="number"
+          placeholder="0.00"
+          name="numberOfEmployees"
+          value={currentContract.numberOfEmployees ?? ''}
+          onChange={handleChange}
+          className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
+        />
       </div>
     </div>
+  </div>
 
-     {/* Toggles */}
-    <div className="bg-white rounded-xl shadow p-4 border lg:col-span-1">
+  {/* SMA Info */}
+  <div className="flex-1 bg-white rounded-xl shadow p-4 border">
+    <h2 className="text-base font-semibold text-blue-800 mb-4">SMA Information</h2>
+    <div className="grid grid-cols-1 sm:grid-cols-1 xl:grid-cols-1 gap-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">SMA Renewal Date</label>
+        <input
+          type="date"
+          name="sma_date"
+          value={currentContract.sma_date ?? ''}
+          onChange={handleChange}
+          className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
+        />
+      </div>
+      {/* <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">SMA Days</label>
+        <input
+          type="number"
+          placeholder="0.00"
+          name="sma_days"
+          value={currentContract.sma_days ?? ''}
+          onChange={handleChange}
+          className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
+        />
+      </div> */}
+    </div>
+  </div>
+
+  {/* Toggles */}
+  <div className="w-full lg:w-1/4 bg-white rounded-xl shadow p-4 border">
     <h2 className="text-base font-semibold text-blue-800 mb-4">Status Flags</h2>
-      <div className="flex flex-wrap justify-center gap-6">
-        {toggleFields
-          .filter(({ key }) => (toggleVisibilityMap[activeTopTab] ?? []).includes(key))
-          .map(({ label, key }) => (
-            <div key={key} className="flex flex-col items-center w-20">
-              <span className="text-sm font-medium text-gray-600 text-center">{label}</span>
-              <button
-                className={`relative w-10 h-6 transition duration-200 ease-in-out rounded-full ${
-                  toggles[activeTopTab]?.[key] ? 'bg-blue-500' : 'bg-gray-300'
+    <div className="flex flex-wrap justify-center gap-2">
+      {toggleFields
+        .filter(({ key }) => (toggleVisibilityMap[activeTopTab] ?? []).includes(key))
+        .map(({ label, key }) => (
+          <div key={key} className="flex flex-col items-center w-20">
+            <span className="text-sm font-medium text-gray-600 text-center">{label}</span>
+            <button
+              className={`relative w-10 h-6 transition duration-200 ease-in-out rounded-full ${
+                toggles[activeTopTab]?.[key] ? 'bg-blue-500' : 'bg-gray-300'
+              }`}
+              onClick={() => handleToggle(key)}
+            >
+              <span
+                className={`absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                  toggles[activeTopTab]?.[key] ? 'translate-x-4' : ''
                 }`}
-                onClick={() => handleToggle(key)}
-              >
-                <span
-                  className={`absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform ${
-                    toggles[activeTopTab]?.[key] ? 'translate-x-4' : ''
-                  }`}
-                />
-              </button>
-            </div>
-          ))}
-      </div>
+              />
+            </button>
+          </div>
+        ))}
     </div>
+  </div>
 
-
-
-    </div>
+</div>
 
 
     {/* Training Days Section */}
     <div className="bg-white rounded-xl shadow p-4 border">
       <h2 className="text-base font-semibold text-blue-800 mb-4">Contract Mandays</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         {/* Training Days */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Training Days</label>
           <input
             type="number"
+            placeholder="0.00"
             name="training_days"
             value={currentContract.training_days ?? ''}
             onChange={handleChange}
@@ -1744,10 +1917,24 @@ const currentContract = clientcontracts[activeTopTab]?.[0] || {};
           <label className="block text-sm font-bold text-blue-700 mb-1">(Consumed)</label>
           <input
             type="number"
+            placeholder="0.00"
             name="training_days_consumed"
             value={currentContract.training_days_consumed ?? ''}
             onChange={handleChange}
             className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-bold text-blue-700 mb-1">Balance</label>
+          <input
+            type="number"
+            placeholder="0.00"
+            value={
+              (currentContract.training_days || 0) -
+              (currentContract.training_days_consumed || 0)
+            }
+            readOnly
+            className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm bg-gray-100 text-gray-600"
           />
         </div>
 
@@ -1756,6 +1943,7 @@ const currentContract = clientcontracts[activeTopTab]?.[0] || {};
           <label className="block text-sm font-medium text-gray-700 mb-1">Post Training Days</label>
           <input
             type="number"
+            placeholder="0.00"
             name="post_training_days"
             value={currentContract.post_training_days ?? ''}
             onChange={handleChange}
@@ -1766,10 +1954,63 @@ const currentContract = clientcontracts[activeTopTab]?.[0] || {};
           <label className="block text-sm font-bold text-blue-700 mb-1">(Consumed)</label>
           <input
             type="number"
+            placeholder="0.00"
             name="post_training_days_consumed"
             value={currentContract.post_training_days_consumed ?? ''}
             onChange={handleChange}
             className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-bold text-blue-700 mb-1">Balance</label>
+          <input
+            type="number"
+            placeholder="0.00"
+            value={
+              (currentContract.post_training_days || 0) -
+              (currentContract.post_training_days_consumed || 0)
+            }
+            readOnly
+            className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm bg-gray-100 text-gray-600"
+          />
+        </div>
+
+
+        {/* SMA Days */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">SMA Days</label>
+          <input
+            type="number"
+            placeholder="0.00"
+            name="sma_days"
+            value={currentContract.sma_days ?? ''}
+            onChange={handleChange}
+            // readOnly
+            className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-bold text-blue-700 mb-1">(Consumed)</label>
+          <input
+            type="number"
+            placeholder="0.00"
+            name="sma_consumed"
+            value={currentContract.sma_consumed ?? ''}
+            onChange={handleChange}
+            className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm"
+          />
+        </div>
+          <div>
+          <label className="block text-sm font-bold text-blue-700 mb-1">Balance</label>
+          <input
+            type="number"
+            placeholder="0.00"
+            value={
+              (currentContract.sma_days || 0) -
+              (currentContract.sma_consumed || 0)
+            }
+            readOnly
+            className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm bg-gray-100 text-gray-600"
           />
         </div>
       </div>
@@ -1785,85 +2026,104 @@ const currentContract = clientcontracts[activeTopTab]?.[0] || {};
   <div className="p-4 space-y-6">
 
   {/* Contract Details + Toggles in One Row */}
-  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div className="flex flex-col lg:flex-row gap-6">
 
-    {/* Contract Section */}
-    <div className="bg-white rounded-xl shadow p-4 border">
-      <h2 className="text-base font-semibold text-blue-800 mb-4">Contract Details</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Signed Contract Date</label>
-          <input
-            type="date"
-            name="contract_date"
-            value={currentContract.contract_date ?? ''}
-            onChange={handleChange}
-            className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">SMA Renewal Date</label>
-          <input
-            type="date"
-            name="sma_date"
-            value={currentContract.sma_date ?? ''}
-            onChange={handleChange}
-            className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">No. of Users</label>
-          <input
-            type="number"
-            name="numberOfUsers"
-            value={currentContract.numberOfUsers ?? ''}
-            onChange={handleChange}
-            className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
-          />
-        </div>
+  {/* Contract Section */}
+  <div className="flex-2 bg-white rounded-xl shadow p-4 border">
+    <h2 className="text-base font-semibold text-blue-800 mb-4">Contract Details</h2>
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Signed Contract Date</label>
+        <input
+          type="date"
+          name="contract_date"
+          value={currentContract.contract_date ?? ''}
+          onChange={handleChange}
+          className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
+        />
       </div>
-    </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">No. of Users</label>
+        <input
+          type="number"
+          placeholder="0.00"
+          name="numberOfUsers"
+          value={currentContract.numberOfUsers ?? ''}
+          onChange={handleChange}
+          className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
+        />
+      </div>
 
-     {/* Toggles */}
-    <div className="bg-white rounded-xl shadow p-4 border">
+    </div>
+  </div>
+
+  {/* SMA Info */}
+  <div className="flex-1 bg-white rounded-xl shadow p-4 border">
+    <h2 className="text-base font-semibold text-blue-800 mb-4">SMA Information</h2>
+    <div className="grid grid-cols-1 sm:grid-cols-1 xl:grid-cols-1 gap-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">SMA Renewal Date</label>
+        <input
+          type="date"
+          name="sma_date"
+          value={currentContract.sma_date ?? ''}
+          onChange={handleChange}
+          className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
+        />
+      </div>
+      {/* <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">SMA Days</label>
+        <input
+          type="number"
+          placeholder="0.00"
+          name="sma_days"
+          value={currentContract.sma_days ?? ''}
+          onChange={handleChange}
+          className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
+        />
+      </div> */}
+    </div>
+  </div>
+
+  {/* Toggles */}
+  <div className="w-full lg:w-1/4 bg-white rounded-xl shadow p-4 border">
     <h2 className="text-base font-semibold text-blue-800 mb-4">Status Flags</h2>
-      <div className="flex flex-wrap justify-center gap-6">
-        {toggleFields
-          .filter(({ key }) => (toggleVisibilityMap[activeTopTab] ?? []).includes(key))
-          .map(({ label, key }) => (
-            <div key={key} className="flex flex-col items-center w-20">
-              <span className="text-sm font-medium text-gray-600 text-center">{label}</span>
-              <button
-                className={`relative w-10 h-6 transition duration-200 ease-in-out rounded-full ${
-                  toggles[activeTopTab]?.[key] ? 'bg-blue-500' : 'bg-gray-300'
+    <div className="flex flex-wrap justify-center gap-2">
+      {toggleFields
+        .filter(({ key }) => (toggleVisibilityMap[activeTopTab] ?? []).includes(key))
+        .map(({ label, key }) => (
+          <div key={key} className="flex flex-col items-center w-20">
+            <span className="text-sm font-medium text-gray-600 text-center">{label}</span>
+            <button
+              className={`relative w-10 h-6 transition duration-200 ease-in-out rounded-full ${
+                toggles[activeTopTab]?.[key] ? 'bg-blue-500' : 'bg-gray-300'
+              }`}
+              onClick={() => handleToggle(key)}
+            >
+              <span
+                className={`absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                  toggles[activeTopTab]?.[key] ? 'translate-x-4' : ''
                 }`}
-                onClick={() => handleToggle(key)}
-              >
-                <span
-                  className={`absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform ${
-                    toggles[activeTopTab]?.[key] ? 'translate-x-4' : ''
-                  }`}
-                />
-              </button>
-            </div>
-          ))}
-      </div>
+              />
+            </button>
+          </div>
+        ))}
     </div>
+  </div>
 
-
-
-    </div>
+</div>
 
 
     {/* Training Days Section */}
     <div className="bg-white rounded-xl shadow p-4 border">
       <h2 className="text-base font-semibold text-blue-800 mb-4">Contract Mandays</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         {/* Training Days */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Training Days</label>
           <input
             type="number"
+            placeholder="0.00"
             name="training_days"
             value={currentContract.training_days ?? ''}
             onChange={handleChange}
@@ -1874,10 +2134,24 @@ const currentContract = clientcontracts[activeTopTab]?.[0] || {};
           <label className="block text-sm font-bold text-blue-700 mb-1">(Consumed)</label>
           <input
             type="number"
+            placeholder="0.00"
             name="training_days_consumed"
             value={currentContract.training_days_consumed ?? ''}
             onChange={handleChange}
             className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-bold text-blue-700 mb-1">Balance</label>
+          <input
+            type="number"
+            placeholder="0.00"
+            value={
+              (currentContract.training_days || 0) -
+              (currentContract.training_days_consumed || 0)
+            }
+            readOnly
+            className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm bg-gray-100 text-gray-600"
           />
         </div>
 
@@ -1886,6 +2160,7 @@ const currentContract = clientcontracts[activeTopTab]?.[0] || {};
           <label className="block text-sm font-medium text-gray-700 mb-1">Post Training Days</label>
           <input
             type="number"
+            placeholder="0.00"
             name="post_training_days"
             value={currentContract.post_training_days ?? ''}
             onChange={handleChange}
@@ -1896,10 +2171,63 @@ const currentContract = clientcontracts[activeTopTab]?.[0] || {};
           <label className="block text-sm font-bold text-blue-700 mb-1">(Consumed)</label>
           <input
             type="number"
+            placeholder="0.00"
             name="post_training_days_consumed"
             value={currentContract.post_training_days_consumed ?? ''}
             onChange={handleChange}
             className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-bold text-blue-700 mb-1">Balance</label>
+          <input
+            type="number"
+            placeholder="0.00"
+            value={
+              (currentContract.post_training_days || 0) -
+              (currentContract.post_training_days_consumed || 0)
+            }
+            readOnly
+            className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm bg-gray-100 text-gray-600"
+          />
+        </div>
+
+
+        {/* SMA Days */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">SMA Days</label>
+          <input
+            type="number"
+            placeholder="0.00"
+            name="sma_days"
+            value={currentContract.sma_days ?? ''}
+            onChange={handleChange}
+            // readOnly
+            className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-bold text-blue-700 mb-1">(Consumed)</label>
+          <input
+            type="number"
+            placeholder="0.00"
+            name="sma_consumed"
+            value={currentContract.sma_consumed ?? ''}
+            onChange={handleChange}
+            className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm"
+          />
+        </div>
+          <div>
+          <label className="block text-sm font-bold text-blue-700 mb-1">Balance</label>
+          <input
+            type="number"
+            placeholder="0.00"
+            value={
+              (currentContract.sma_days || 0) -
+              (currentContract.sma_consumed || 0)
+            }
+            readOnly
+            className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm bg-gray-100 text-gray-600"
           />
         </div>
       </div>
@@ -1908,93 +2236,111 @@ const currentContract = clientcontracts[activeTopTab]?.[0] || {};
    
 
   </div> 
-               
 )}
 
   {/* WMS Content */}
   {activeTopTab === "WMS" && (
   <div className="p-4 space-y-6">
 
-  {/* Contract Details + Toggles in One Row */}
-  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+ {/* Contract Details + Toggles in One Row */}
+<div className="flex flex-col lg:flex-row gap-6">
 
-    {/* Contract Section */}
-    <div className="bg-white rounded-xl shadow p-4 border">
-      <h2 className="text-base font-semibold text-blue-800 mb-4">Contract Details</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Signed Contract Date</label>
-          <input
-            type="date"
-            name="contract_date"
-            value={currentContract.contract_date ?? ''}
-            onChange={handleChange}
-            className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">SMA Renewal Date</label>
-          <input
-            type="date"
-            name="sma_date"
-            value={currentContract.sma_date ?? ''}
-            onChange={handleChange}
-            className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">No. of Users</label>
-          <input
-            type="number"
-            name="numberOfUsers"
-            value={currentContract.numberOfUsers ?? ''}
-            onChange={handleChange}
-            className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
-          />
-        </div>
+  {/* Contract Section */}
+  <div className="flex-2 bg-white rounded-xl shadow p-4 border">
+    <h2 className="text-base font-semibold text-blue-800 mb-4">Contract Details</h2>
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Signed Contract Date</label>
+        <input
+          type="date"
+          name="contract_date"
+          value={currentContract.contract_date ?? ''}
+          onChange={handleChange}
+          className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
+        />
       </div>
-    </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">No. of Users</label>
+        <input
+          type="number"
+          placeholder="0.00"
+          name="numberOfUsers"
+          value={currentContract.numberOfUsers ?? ''}
+          onChange={handleChange}
+          className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
+        />
+      </div>
 
-     {/* Toggles */}
-    <div className="bg-white rounded-xl shadow p-4 border">
+    </div>
+  </div>
+
+  {/* SMA Info */}
+  <div className="flex-1 bg-white rounded-xl shadow p-4 border">
+    <h2 className="text-base font-semibold text-blue-800 mb-4">SMA Information</h2>
+    <div className="grid grid-cols-1 sm:grid-cols-1 xl:grid-cols-1 gap-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">SMA Renewal Date</label>
+        <input
+          type="date"
+          name="sma_date"
+          value={currentContract.sma_date ?? ''}
+          onChange={handleChange}
+          className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
+        />
+      </div>
+      {/* <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">SMA Days</label>
+        <input
+          type="number"
+          placeholder="0.00"
+          name="sma_days"
+          value={currentContract.sma_days ?? ''}
+          onChange={handleChange}
+          className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
+        />
+      </div> */}
+    </div>
+  </div>
+
+  {/* Toggles */}
+  <div className="w-full lg:w-1/4 bg-white rounded-xl shadow p-4 border">
     <h2 className="text-base font-semibold text-blue-800 mb-4">Status Flags</h2>
-      <div className="flex flex-wrap justify-center gap-6">
-        {toggleFields
-          .filter(({ key }) => (toggleVisibilityMap[activeTopTab] ?? []).includes(key))
-          .map(({ label, key }) => (
-            <div key={key} className="flex flex-col items-center w-20">
-              <span className="text-sm font-medium text-gray-600 text-center">{label}</span>
-              <button
-                className={`relative w-10 h-6 transition duration-200 ease-in-out rounded-full ${
-                  toggles[activeTopTab]?.[key] ? 'bg-blue-500' : 'bg-gray-300'
+    <div className="flex flex-wrap justify-center gap-2">
+      {toggleFields
+        .filter(({ key }) => (toggleVisibilityMap[activeTopTab] ?? []).includes(key))
+        .map(({ label, key }) => (
+          <div key={key} className="flex flex-col items-center w-20">
+            <span className="text-sm font-medium text-gray-600 text-center">{label}</span>
+            <button
+              className={`relative w-10 h-6 transition duration-200 ease-in-out rounded-full ${
+                toggles[activeTopTab]?.[key] ? 'bg-blue-500' : 'bg-gray-300'
+              }`}
+              onClick={() => handleToggle(key)}
+            >
+              <span
+                className={`absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                  toggles[activeTopTab]?.[key] ? 'translate-x-4' : ''
                 }`}
-                onClick={() => handleToggle(key)}
-              >
-                <span
-                  className={`absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform ${
-                    toggles[activeTopTab]?.[key] ? 'translate-x-4' : ''
-                  }`}
-                />
-              </button>
-            </div>
-          ))}
-      </div>
+              />
+            </button>
+          </div>
+        ))}
     </div>
+  </div>
 
-
-
-    </div>
+</div>
 
 
     {/* Training Days Section */}
     <div className="bg-white rounded-xl shadow p-4 border">
       <h2 className="text-base font-semibold text-blue-800 mb-4">Contract Mandays</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         {/* Training Days */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Training Days</label>
           <input
             type="number"
+            placeholder="0.00"
             name="training_days"
             value={currentContract.training_days ?? ''}
             onChange={handleChange}
@@ -2005,10 +2351,24 @@ const currentContract = clientcontracts[activeTopTab]?.[0] || {};
           <label className="block text-sm font-bold text-blue-700 mb-1">(Consumed)</label>
           <input
             type="number"
+            placeholder="0.00"
             name="training_days_consumed"
             value={currentContract.training_days_consumed ?? ''}
             onChange={handleChange}
             className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-bold text-blue-700 mb-1">Balance</label>
+          <input
+            type="number"
+            placeholder="0.00"
+            value={
+              (currentContract.training_days || 0) -
+              (currentContract.training_days_consumed || 0)
+            }
+            readOnly
+            className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm bg-gray-100 text-gray-600"
           />
         </div>
 
@@ -2017,6 +2377,7 @@ const currentContract = clientcontracts[activeTopTab]?.[0] || {};
           <label className="block text-sm font-medium text-gray-700 mb-1">Post Training Days</label>
           <input
             type="number"
+            placeholder="0.00"
             name="post_training_days"
             value={currentContract.post_training_days ?? ''}
             onChange={handleChange}
@@ -2027,10 +2388,63 @@ const currentContract = clientcontracts[activeTopTab]?.[0] || {};
           <label className="block text-sm font-bold text-blue-700 mb-1">(Consumed)</label>
           <input
             type="number"
+            placeholder="0.00"
             name="post_training_days_consumed"
             value={currentContract.post_training_days_consumed ?? ''}
             onChange={handleChange}
             className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-bold text-blue-700 mb-1">Balance</label>
+          <input
+            type="number"
+            placeholder="0.00"
+            value={
+              (currentContract.post_training_days || 0) -
+              (currentContract.post_training_days_consumed || 0)
+            }
+            readOnly
+            className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm bg-gray-100 text-gray-600"
+          />
+        </div>
+
+
+        {/* SMA Days */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">SMA Days</label>
+          <input
+            type="number"
+            placeholder="0.00"
+            name="sma_days"
+            value={currentContract.sma_days ?? ''}
+            onChange={handleChange}
+            // readOnly
+            className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-bold text-blue-700 mb-1">(Consumed)</label>
+          <input
+            type="number"
+            placeholder="0.00"
+            name="sma_consumed"
+            value={currentContract.sma_consumed ?? ''}
+            onChange={handleChange}
+            className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm"
+          />
+        </div>
+          <div>
+          <label className="block text-sm font-bold text-blue-700 mb-1">Balance</label>
+          <input
+            type="number"
+            placeholder="0.00"
+            value={
+              (currentContract.sma_days || 0) -
+              (currentContract.sma_consumed || 0)
+            }
+            readOnly
+            className="w-full h-10 px-3 border border-blue-300 rounded-md text-sm bg-gray-100 text-gray-600"
           />
         </div>
       </div>
@@ -2039,8 +2453,6 @@ const currentContract = clientcontracts[activeTopTab]?.[0] || {};
    
 
   </div> 
-
-
 )}
 
       {/* Modules Section */}

@@ -133,9 +133,10 @@ const Sidebar = ({
 
 
               <SidebarLink
+                to="/Addclients"
                 icon={faAdd}
                 label="Add New Client"
-                isActive={currentSection === "add-client"}
+                isActive={location.pathname === "/Addclients" && currentSection !== "add-client"}
                 isOpen={isOpen}
                 onClick={() => {
                   onAddClient();

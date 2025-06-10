@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import AddClientForm from "./AddClient";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faBell, faUser, faSignOutAlt, faSort, faSortUp, faSortDown, faPlus } from "@fortawesome/free-solid-svg-icons";
+import { faBell, faUser, faSignOutAlt, faSort, faSortUp, faSortDown, faPlus, faFolderOpen } from "@fortawesome/free-solid-svg-icons";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../Authentication/AuthContext";
 import { PostAPI  } from "../api";
@@ -16,7 +16,7 @@ const ClientsPayroll = () => {
   const [showAddClientForm, setShowAddClientForm] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const itemsPerPage = 50;
+  const itemsPerPage = 100;
 
   // Sorting state
   const [sortConfig, setSortConfig] = useState({
@@ -29,10 +29,8 @@ const ClientsPayroll = () => {
     client_name: "",
     contract_date: "",
     sma_date: "",
-    // cas: "",
     live: "",
     with_sma: "",
-    // fs_live: "",
     active: "",
     numberOfUsers: "",
     training_days: "",
@@ -178,7 +176,8 @@ const currentItems = Array.isArray(filteredClients)
     <h2 className="text-2xl font-bold text-gray-800">Clients Information (HR-PAY)</h2>
     <button
       className="bg-blue-700 text-white px-4 py-2 rounded-full hover:bg-blue-900 transition"
-      onClick={() => setShowAddClientForm(true)}
+      // onClick={() => setShowAddClientForm(true)}
+      onClick={() => navigate("/Addclients")}
     >
               <FontAwesomeIcon icon={faPlus} /> Add New Client
     </button>
@@ -209,10 +208,8 @@ const currentItems = Array.isArray(filteredClients)
                 { key: "client_name", label: "Client Name" },
                 { key: "contract_date", label: "Contract Date" },
                 { key: "sma_date", label: "SMA Date" },
-                // { key: "cas", label: "CAS" },
                 { key: "live", label: "Live" },
                 { key: "with_sma", label: "With SMA?" },
-                // { key: "fs_live", label: "FS Live?" },
                 { key: "active", label: "Active" },
                 { key: "numberOfUsers", label: "User License" },
                 { key: "training_days", label: "Training Days" },
@@ -251,7 +248,11 @@ const currentItems = Array.isArray(filteredClients)
           </thead>
           <tbody className="divide-y divide-gray-200">
             {currentItems.map((client, index) => (
-              <tr key={index} className="bg-white hover:bg-blue-50 transition">
+              <tr key={index} 
+                  className="bg-white hover:bg-blue-50 transition cursor-pointer"
+                  onClick={() => navigate("/Addclients", { state: client })}
+                  title="Click to View Document"
+              >
                 <td className="px-2 py-2 border text-left text-blue-800">{client.client_code}</td>
                 <td className="px-2 py-2 w-[300px] border text-left">{client.client_name}</td>
                 <td className="px-2 py-2 border">
@@ -268,10 +269,8 @@ const currentItems = Array.isArray(filteredClients)
                     day: '2-digit',
                   }).format(new Date(client.sma_date))}
                 </td>
-                {/* <td className="px-2 py-2 border">{client.cas}</td> */}
                 <td className="px-2 py-2 border">{client.live}</td>
                 <td className="px-2 py-2 border">{client.with_sma}</td>
-                {/* <td className="px-2 py-2 border">{client.fs_live}</td> */}
                 <td className="px-2 py-2 border">{client.active}</td>
                 <td className="px-2 py-2 border">{client.numberOfUsers}</td>
                 <td className="px-2 py-2 border">{client.training_days}</td>
@@ -281,8 +280,8 @@ const currentItems = Array.isArray(filteredClients)
                   <button
                     className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-800 transition"
                     onClick={() => navigate("/Addclients", { state: client })}
-                  >
-                    View
+                  >                
+                  <FontAwesomeIcon icon={faFolderOpen} />
                   </button>
                 </td>
               </tr>

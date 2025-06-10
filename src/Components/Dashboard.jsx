@@ -9,12 +9,16 @@ import StatCard from "./StatCard";
 import MiniTable from "./MiniTable";
 import DashboardClientList from "./DashboardClientList";
 
-
 import {
-  PieChart,
-  Pie,
-  BarChart,
-  Bar,
+
+  PieChart,Pie,
+  BarChart,Bar,
+  LineChart,Line,
+  AreaChart, Area,
+  ComposedChart,
+  RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
+  ScatterChart,Scatter,
+
   XAxis,
   YAxis,
   Tooltip,
@@ -23,7 +27,11 @@ import {
   Cell,
 } from "recharts";
 
-const COLORS = ["#8884d8", "#82ca9d", "#ffc658", "#ff8042", "#00C49F", "#FF69B4", "#8B0000"];
+// const COLORS = ["#8884d8", "#82ca9d", "#ffc658", "#ff8042", "#00C49F", "#FF69B4", "#8B0000"];
+
+const COLORS = ["#8884d8", "#64b5f6", "#ffc658", "#ff8042", "#00C49F", "#FF69B4", "#8B0000"];
+// const COLORS = ['#1976d2', '#1e88e5', '#2196f3', '#42a5f5', '#64b5f6', '#90caf9', '#bbdefb'];
+
 
 const CustomXAxisTick = ({ x, y, payload, data, dataKey }) => {
   const item = data.find(d => d[dataKey] === payload.value);
@@ -72,7 +80,7 @@ const SystemsBarChart = ({ data }) => {
             height={60}
           />
           {/* <YAxis allowDecimals={false} /> */}
-          <Tooltip formatter={(value) => [value, "count"]} />
+          <Tooltip formatter={(value) => [value, "Clients"]} />
           <Bar dataKey="client_count" name="">
             {safeData.map((_, index) => (
               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -84,6 +92,65 @@ const SystemsBarChart = ({ data }) => {
   );
 };
 
+
+const SMAApplicationBarChart = ({ data }) => {
+  const safeData = Array.isArray(data) ? data : [];
+
+  return (
+    <div className="bg-white p-4 rounded-lg shadow-md w-full h-96">
+      <h4 className="text-md font-bold mb-4">Applications with SMA</h4>
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={safeData} margin={{ bottom: 40 }}>
+          {/* <CartesianGrid strokeDasharray="3 3" /> */}
+          <XAxis
+            dataKey="system_code"
+            interval={0}
+            tick={<CustomXAxisTick data={safeData} dataKey="system_code" />}
+            height={60}
+          />
+          {/* <YAxis allowDecimals={false} /> */}
+          <Tooltip formatter={(value) => [value, "Clients"]} />
+          <Bar dataKey="client_count" name="">
+            {safeData.map((_, index) => (
+              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
+
+// const SMABarChart = ({ data }) => {
+//   const safeData = Array.isArray(data) ? data : [];
+
+//   return (
+//     <div className="bg-white p-4 rounded-lg shadow-md w-full h-96">
+//       <h4 className="text-md font-bold mb-4">SMA Count (Bar Chart)</h4>
+//       <ResponsiveContainer width="100%" height="100%">
+//         <BarChart data={safeData} margin={{ bottom: 40 }}>
+//           {/* <CartesianGrid strokeDasharray="3 3" /> */}
+//           <XAxis
+//             dataKey="sma_type"
+//             interval={0}
+//             tick={<CustomXAxisTick data={safeData} dataKey="sma_type" />}
+//             height={60}
+//           />
+//           {/* <YAxis allowDecimals={false} /> */}
+//           <Tooltip formatter={(value) => [value, "count"]} />
+//           <Bar dataKey="client_count" name="">
+//             {safeData.map((_, index) => (
+//               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+//             ))}
+//           </Bar>
+//         </BarChart>
+//       </ResponsiveContainer>
+//     </div>
+//   );
+// };
+
+
 const SystemsPieChart = ({ data }) => {
   const safeData = Array.isArray(data)
     ? data.map(d => ({ ...d, client_count: +d.client_count }))
@@ -91,7 +158,7 @@ const SystemsPieChart = ({ data }) => {
 
   return (
     <div className="bg-white p-4 rounded-lg shadow-md w-full h-96">
-      <h4 className="text-md font-bold mb-4">Top Applications</h4>
+      <h4 className="text-md font-bold mb-4">Top Applications (Pie Chart)</h4>
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Tooltip formatter={(value) => [value, "Clients"]} />
@@ -99,9 +166,432 @@ const SystemsPieChart = ({ data }) => {
             data={safeData}
             dataKey="client_count"
             nameKey="system_code"
-            outerRadius={100}
+            outerRadius={80}
             label={({ name, percent }) =>
               `${name}: ${(percent * 100).toFixed(0)}%`
+            }
+          >
+            {safeData.map((_, index) => (
+              <Cell
+                key={`cell-${index}`}
+                fill={COLORS[index % COLORS.length]}
+              />
+            ))}
+          </Pie>
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
+
+// const SMAPieChart = ({ data }) => {
+//   const safeData = Array.isArray(data)
+//     ? data.map(d => ({ ...d, client_count: +d.client_count }))
+//     : [];
+
+//   return (
+//     <div className="bg-white p-4 rounded-lg shadow-md w-full h-90">
+//       <h4 className="text-md font-bold mb-4">SMA Count (Pie Chart)</h4>
+//       <ResponsiveContainer width="100%" height="80%">
+//         <PieChart>
+//           <Tooltip formatter={(value) => [value, "Clients"]} />
+//           <Pie
+//             data={safeData}
+//             dataKey="client_count"
+//             nameKey="sma_type"
+//             outerRadius={80}
+//             label={({ name, value, percent }) =>
+//               `${name}: ${value} (${(percent * 100).toFixed(0)}%)`
+//             }
+//           >
+//             {safeData.map((_, index) => (
+//               <Cell
+//                 key={`cell-${index}`}
+//                 fill={COLORS[index % COLORS.length]}
+//               />
+//             ))}
+//           </Pie>
+//         </PieChart>
+//       </ResponsiveContainer>
+//     </div>
+//   );
+// };
+
+
+const SystemsLineChart = ({ data }) => {
+  const safeData = Array.isArray(data) ? data : [];
+
+  return (
+    <div className="bg-white p-4 rounded-lg shadow-md w-full h-96">
+      <h4 className="text-md font-bold mb-4">Top Applications (Line Chart)</h4>
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={safeData} margin={{ bottom: 30 }}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis
+            dataKey="system_code"
+            interval={0}
+            tick={<CustomXAxisTick data={safeData} dataKey="system_code" />}
+            height={60}
+            width={100}
+          />
+          {/* <YAxis allowDecimals={false} /> */}
+          <Tooltip formatter={(value) => [value, "count"]} />
+          <Line
+            type="monotone"
+            dataKey="client_count"
+            stroke="#8884d8"
+            activeDot={{ r: 6 }}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
+// const SMALineChart = ({ data }) => {
+//   const safeData = Array.isArray(data)
+//     ? data.map(d => ({ ...d, client_count: +d.client_count }))
+//     : [];
+
+//   return (
+//     <div className="bg-white p-4 rounded-lg shadow-md w-full h-90">
+//       <h4 className="text-md font-bold mb-4">SMA Count (Line Chart)</h4>
+//       <ResponsiveContainer width="100%" height={300}>
+//         <LineChart data={safeData}>
+//           <CartesianGrid strokeDasharray="3 3" />
+//           <XAxis dataKey="sma_type" />
+//           <YAxis />
+//           <Tooltip formatter={(value) => [value, "Clients"]} />
+//           <Line
+//             type="monotone"
+//             dataKey="client_count"
+//             stroke={COLORS[0]}
+//             activeDot={{ r: 8 }}
+//           />
+//         </LineChart>
+//       </ResponsiveContainer>
+//     </div>
+//   );
+// };
+
+
+
+const SystemsAreaChart = ({ data }) => {
+  const safeData = Array.isArray(data) ? data : [];
+
+  return (
+    <div className="bg-white p-4 rounded-lg shadow-md w-md h-96">
+      <h4 className="text-md font-bold mb-4">Top Applications (Area Chart)</h4>
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={safeData} margin={{ bottom: 40 }}>
+          {/* <CartesianGrid strokeDasharray="3 3" /> */}
+          {/* <CartesianGrid stroke="#ccc" /> */}
+          <XAxis
+            dataKey="system_code"
+            interval={0}
+            tick={<CustomXAxisTick data={safeData} dataKey="system_code" />}
+            height={60}
+          />
+          {/* <YAxis allowDecimals={false} /> */}
+          <Tooltip formatter={(value) => [value, "count"]} />
+          <Area
+            type="monotone"
+            dataKey="client_count"
+            stroke={COLORS[0]}
+            fill={COLORS[0]}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
+
+// const SMAAreaChart = ({ data }) => {
+//   const safeData = Array.isArray(data)
+//     ? data.map(d => ({ ...d, client_count: +d.client_count }))
+//     : [];
+
+//   return (
+//     <div className="bg-white p-4 rounded-lg shadow-md w-full h-90">
+//       <h4 className="text-md font-bold mb-4">SMA Count (Area Chart)</h4>
+//       <ResponsiveContainer width="100%" height={300}>
+//         <AreaChart data={safeData}>
+//           <CartesianGrid stroke="#ccc" />
+//           <XAxis dataKey="sma_type" />
+//           <YAxis />
+//           <Tooltip formatter={(value) => [value, "Clients"]} />
+//           <Area
+//             type="monotone"
+//             dataKey="client_count"
+//             stroke={COLORS[0]}
+//             fill={COLORS[0]}
+//           />
+//         </AreaChart>
+//       </ResponsiveContainer>
+//     </div>
+//   );
+// };
+
+
+const SystemsComposedChart = ({ data }) => {
+  const safeData = Array.isArray(data) ? data : [];
+
+  return (
+    <div className="bg-white p-4 rounded-lg shadow-md w-full h-96">
+      <h4 className="text-md font-bold mb-4">Top Applications (Composed Chart)</h4>
+      <ResponsiveContainer width="100%" height="100%">
+        <ComposedChart data={safeData} margin={{ bottom: 40 }}>
+          {/* <CartesianGrid strokeDasharray="3 3" /> */}
+          <XAxis
+            dataKey="system_code"
+            interval={0}
+            tick={<CustomXAxisTick data={safeData} dataKey="system_code" />}
+            height={60}
+          />
+          {/* <YAxis allowDecimals={false} /> */}
+          <Tooltip formatter={(value) => [value, "count"]} />
+          <Bar dataKey="client_count">
+            {safeData.map((_, index) => (
+              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+            ))}
+          </Bar>
+          <Line type="monotone" dataKey="client_count" stroke="#ff7300" />
+        </ComposedChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
+const SystemsRadarChart = ({ data }) => {
+  const safeData = Array.isArray(data) ? data : [];
+
+  return (
+    <div className="bg-white p-4 rounded-lg shadow-md w-full h-96">
+      <h4 className="text-md font-bold mb-4">Top Applications (Radar Chart)</h4>
+      <ResponsiveContainer width="100%" height="100%">
+        <RadarChart data={safeData}>
+          <PolarGrid />
+          <PolarAngleAxis dataKey="system_code" />
+          <PolarRadiusAxis />
+          <Radar
+            dataKey="client_count"
+            stroke="#8884d8"
+            fill="#8884d8"
+            fillOpacity={0.6}
+          />
+        </RadarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
+const SystemsScatterChart = ({ data }) => {
+  const safeData = Array.isArray(data)
+    ? data.map((d, i) => ({ ...d, index: i })) // Add index for X-axis
+    : [];
+
+  return (
+    <div className="bg-white p-4 rounded-lg shadow-md w-full h-96">
+      <h4 className="text-md font-bold mb-4">Top Applications (Scatter Chart)</h4>
+      <ResponsiveContainer width="100%" height="100%">
+        <ScatterChart margin={{ bottom: 40 }}>
+          <CartesianGrid />
+          <XAxis dataKey="index" name="Application Index" />
+          <YAxis dataKey="client_count" name="Client Count" />
+          <Tooltip cursor={{ strokeDasharray: '3 3' }} formatter={(value) => [value, "count"]} />
+          <Scatter name="Applications" data={safeData} fill="#8884d8" />
+        </ScatterChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
+
+// const COLORS = ['#8884d8', '#82ca9d', '#ffc658'];
+
+  // const renderCustomizedLabel = ({ name, value, percent, x, y }) => {
+  //   return (
+  //     <text x={x} y={y} fill="#000" fontSize="1rem" textAnchor="middle" dominantBaseline="central">
+  //       {`${name}: ${value} (${(percent * 100).toFixed(0)}%)`}
+  //     </text>
+  //   );
+  // };
+
+const IndustryPieChart = ({ data }) => {
+  const safeData = Array.isArray(data)
+    ? data.map(d => ({ ...d, count: +d.count }))
+    : [];
+
+  return (
+    <div className="bg-white p-4 rounded-lg shadow-md w-full h-96">
+      <h4 className="text-md font-bold mb-4">Client Industry</h4>
+      <ResponsiveContainer width="100%" height="80%">
+        <PieChart>
+          <Tooltip formatter={(value) => [value, 'Clients']} />
+          <Pie
+            data={safeData}
+            dataKey="count"
+            nameKey="industry"
+            outerRadius={100}
+            label={({ name, value, percent }) => `${name}: (${(percent * 100).toFixed(0)}%)` }
+            // label={renderCustomizedLabel}
+          >
+            {safeData.map((_, index) => (
+              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+            ))}
+          </Pie>
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
+const IndustryBarChart = ({ data }) => {
+  const safeData = Array.isArray(data)
+    ? data.map(d => ({ ...d, count: +d.count }))
+    : [];
+
+  return (
+    <div className="bg-white p-4 rounded-lg shadow-md w-full h-96">
+      <h4 className="text-md font-bold mb-4">Industry Count (Bar Chart)</h4>
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={safeData} margin={{ bottom: 40 }}>
+          <XAxis dataKey="industry" interval={0} height={60} />
+          <Tooltip formatter={(value) => [value, 'Count']} />
+          <Bar dataKey="count" name="">
+            {safeData.map((_, index) => (
+              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
+const IndustryLineChart = ({ data }) => {
+  const safeData = Array.isArray(data)
+    ? data.map(d => ({ ...d, count: +d.count }))
+    : [];
+
+  return (
+    <div className="bg-white p-4 rounded-lg shadow-md w-full h-96">
+      <h4 className="text-md font-bold mb-4">Industry Count (Line Chart)</h4>
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={safeData}>
+          <XAxis dataKey="industry" />
+          <YAxis />
+          <Tooltip formatter={(value) => [value, 'Count']} />
+          <Line type="monotone" dataKey="count" stroke="#8884d8" />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
+const IndustryAreaChart = ({ data }) => {
+  const safeData = Array.isArray(data)
+    ? data.map(d => ({ ...d, count: +d.count }))
+    : [];
+
+  return (
+    <div className="bg-white p-4 rounded-lg shadow-md w-full h-96">
+      <h4 className="text-md font-bold mb-4">Industry Count (Area Chart)</h4>
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={safeData}>
+          <XAxis dataKey="industry" />
+          <YAxis />
+          <Tooltip formatter={(value) => [value, 'Count']} />
+          <Area type="monotone" dataKey="count" stroke="#82ca9d" fill="#82ca9d" />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
+const IndustryComposedChart = ({ data }) => {
+  const safeData = Array.isArray(data)
+    ? data.map(d => ({ ...d, count: +d.count }))
+    : [];
+
+  return (
+    <div className="bg-white p-4 rounded-lg shadow-md w-full h-96">
+      <h4 className="text-md font-bold mb-4">Industry Count (Composed Chart)</h4>
+      <ResponsiveContainer width="100%" height="100%">
+        <ComposedChart data={safeData}>
+          <XAxis dataKey="industry" />
+          <YAxis />
+          <Tooltip formatter={(value) => [value, 'Count']} />
+          <Bar dataKey="count" barSize={20} fill="#8884d8" />
+          <Line type="monotone" dataKey="count" stroke="#ff7300" />
+        </ComposedChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
+const IndustryRadarChart = ({ data }) => {
+  const radarData = Array.isArray(data)
+    ? data.map(d => ({ subject: d.industry, A: +d.count, fullMark: 10 }))
+    : [];
+
+  return (
+    <div className="bg-white p-4 rounded-lg shadow-md w-full h-96">
+      <h4 className="text-md font-bold mb-4">Industry Count (Radar Chart)</h4>
+      <ResponsiveContainer width="100%" height="100%">
+        <RadarChart data={radarData}>
+          <PolarGrid />
+          <PolarAngleAxis dataKey="subject" />
+          <Radar dataKey="A" stroke="#8884d8" fill="#8884d8" fillOpacity={0.6} />
+          <Tooltip />
+        </RadarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
+const IndustryScatterChart = ({ data }) => {
+  const scatterData = Array.isArray(data)
+    ? data.map((d, i) => ({ x: i, y: +d.count, industry: d.industry }))
+    : [];
+
+  return (
+    <div className="bg-white p-4 rounded-lg shadow-md w-full h-96">
+      <h4 className="text-md font-bold mb-4">Industry Count (Scatter Chart)</h4>
+      <ResponsiveContainer width="100%" height="100%">
+        <ScatterChart>
+          <XAxis dataKey="x" name="Industry" tickFormatter={(i) => data[i]?.industry} />
+          <YAxis dataKey="y" name="Count" />
+          <Tooltip formatter={(value) => [value, 'Count']} />
+          <Scatter data={scatterData} fill="#8884d8" />
+        </ScatterChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
+
+
+const SMAPieChart = ({ data }) => {
+  const safeData = Array.isArray(data)
+    ? data.map(d => ({ ...d, client_count: +d.client_count }))
+    : [];
+
+  return (
+    <div className="bg-white p-4 rounded-lg shadow-md w-full h-90">
+      <h4 className="text-md font-bold mb-2">SMA Count</h4>
+      <ResponsiveContainer width="100%" height="80%">
+        <PieChart>
+          <Tooltip formatter={(value) => [value, "Clients"]} />
+          <Pie
+            data={safeData}
+            dataKey="client_count"
+            nameKey="sma_type"
+            outerRadius={100}
+            label={({ name, value, percent }) =>
+              `${name}: ${value} (${(percent * 100).toFixed(0)}%)`
             }
           >
             {safeData.map((_, index) => (
@@ -119,23 +609,20 @@ const SystemsPieChart = ({ data }) => {
 
 const SMABarChart = ({ data }) => {
   const safeData = Array.isArray(data) ? data : [];
+  const total = safeData.reduce((sum, d) => sum + d.client_count, 0);
 
   return (
     <div className="bg-white p-4 rounded-lg shadow-md w-full h-96">
-      <h4 className="text-md font-bold mb-4">SMA Count</h4>
+      <h4 className="text-md font-bold mb-4">SMA Count (Bar Chart)</h4>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={safeData} margin={{ bottom: 40 }}>
-          {/* <CartesianGrid strokeDasharray="3 3" /> */}
-          <XAxis
-            dataKey="sma_type"
-            interval={0}
-            tick={<CustomXAxisTick data={safeData} dataKey="sma_type" />}
-            height={60}
-          />
-          {/* <YAxis allowDecimals={false} /> */}
-          <Tooltip formatter={(value) => [value, "count"]} />
-          <Bar dataKey="client_count" name="">
-            {safeData.map((_, index) => (
+          <XAxis dataKey="sma_type" interval={0} height={60} />
+          <Tooltip formatter={(value) => [`${value} (${((value / total) * 100).toFixed(1)}%)`, 'Clients']} />
+          <Bar
+            dataKey="client_count"
+            label={({ value }) => `${value}`}
+          >
+            {safeData.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
             ))}
           </Bar>
@@ -145,41 +632,112 @@ const SMABarChart = ({ data }) => {
   );
 };
 
-
-const SMAPieChart = ({ data }) => {
-  const safeData = Array.isArray(data)
-    ? data.map(d => ({ ...d, client_count: +d.client_count }))
-    : [];
+const SMALineChart = ({ data }) => {
+  const safeData = Array.isArray(data) ? data : [];
 
   return (
     <div className="bg-white p-4 rounded-lg shadow-md w-full h-96">
-      <h4 className="text-md font-bold mb-4">SMA Count</h4>
+      <h4 className="text-md font-bold mb-4">SMA Count (Line Chart)</h4>
       <ResponsiveContainer width="100%" height="100%">
-        <PieChart>
-          <Tooltip formatter={(value) => [value, "Clients"]} />
-          <Pie
-            data={safeData}
-            dataKey="client_count"
-            nameKey="sma_type"
-            outerRadius={100}
-            label={({ name, percent }) =>
-              `${name}: ${(percent * 100).toFixed(0)}%`
-            }
-          >
-            {safeData.map((_, index) => (
-              <Cell
-                key={`cell-${index}`}
-                fill={COLORS[index % COLORS.length]}
-              />
-            ))}
-          </Pie>
-        </PieChart>
+        <LineChart data={safeData}>
+          <XAxis dataKey="sma_type" />
+          <YAxis />
+          <Tooltip formatter={(value) => [value, 'Clients']} />
+          <Line type="monotone" dataKey="client_count" stroke="#8884d8" />
+        </LineChart>
       </ResponsiveContainer>
     </div>
   );
 };
 
+const SMAAreaChart = ({ data }) => {
+  const safeData = Array.isArray(data) ? data : [];
 
+  return (
+    <div className="bg-white p-4 rounded-lg shadow-md w-full h-96">
+      <h4 className="text-md font-bold mb-4">SMA Count (Area Chart)</h4>
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={safeData}>
+          <XAxis dataKey="sma_type" />
+          <YAxis />
+          <Tooltip formatter={(value) => [value, 'Clients']} />
+          <Area type="monotone" dataKey="client_count" stroke="#82ca9d" fill="#82ca9d" />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
+const SMAComposedChart = ({ data }) => {
+  const safeData = Array.isArray(data) ? data : [];
+  const total = safeData.reduce((sum, d) => sum + d.client_count, 0);
+
+  return (
+    <div className="bg-white p-4 rounded-lg shadow-md w-full h-96">
+      <h4 className="text-md font-bold mb-4">SMA Count (Composed Chart)</h4>
+      <ResponsiveContainer width="100%" height="90%">
+        <ComposedChart data={safeData}>
+          <XAxis dataKey="sma_type" />
+          {/* <YAxis /> */}
+          <Tooltip formatter={(value) => [`${value} (${((value / total) * 100).toFixed(1)}%)`, 'Clients']} />
+          <Bar
+            dataKey="client_count"
+            barSize={100}
+            fill="#8884d8"
+            // label={({ value }) => `${value}`}
+            // label={({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(0)}%)`}
+          />
+          <Line 
+            type="monotone" 
+            dataKey="client_count" 
+            stroke="#ff7300" 
+            // label={({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(0)}%)`}
+          />
+        </ComposedChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
+const SMARadarChart = ({ data }) => {
+  const radarData = Array.isArray(data)
+    ? data.map(d => ({ subject: d.sma_type, A: +d.client_count, fullMark: 100 }))
+    : [];
+
+  return (
+    <div className="bg-white p-4 rounded-lg shadow-md w-full h-96">
+      <h4 className="text-md font-bold mb-4">SMA Count (Radar Chart)</h4>
+      <ResponsiveContainer width="100%" height="100%">
+        <RadarChart data={radarData}>
+          <PolarGrid />
+          <PolarAngleAxis dataKey="subject" />
+          <Radar dataKey="A" stroke="#8884d8" fill="#8884d8" fillOpacity={0.6} />
+          <Tooltip />
+        </RadarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
+const SMAScatterChart = ({ data }) => {
+  const scatterData = Array.isArray(data)
+    ? data.map((d, i) => ({ x: i, y: +d.client_count, sma: d.sma_type }))
+    : [];
+
+  return (
+    <div className="bg-white p-4 rounded-lg shadow-md w-full h-96">
+      <h4 className="text-md font-bold mb-4">SMA Count (Scatter Chart)</h4>
+      <ResponsiveContainer width="100%" height="100%">
+        <ScatterChart>
+          <XAxis dataKey="x" name="SMA" tickFormatter={(i) => data[i]?.sma_type} />
+          <YAxis dataKey="y" name="Clients" />
+          <Tooltip formatter={(value) => [value, 'Clients']} />
+          <Scatter data={scatterData} fill="#8884d8" />
+        </ScatterChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
 
 
 
@@ -249,6 +807,9 @@ const [topClients, setTopClients] = useState([]);
 const [ExpiredSMA, setExpiredSMA] = useState([]);
 const [upcomingExpirations, setUpcomingExpirations] = useState([]);
 const [SMADashboard, setSMADashboard] = useState([]);
+const [Industry, setIndustry] = useState([]);
+const [SMAApplication, setSMAApplication] = useState([]);
+
 useEffect(() => {
   if (!user?.id) return;
 
@@ -262,6 +823,8 @@ useEffect(() => {
       ExpiredSMA,
       expirations,
       SMADashboard,
+      Industry,
+      SMAApplication,
     ] = await Promise.all([
       fetchDataByMode("ContractsSummary"),
       fetchDataByMode("ClientsWithSMA"),
@@ -271,6 +834,8 @@ useEffect(() => {
       fetchDataByMode("ExpiredSMA"),
       fetchDataByMode("UpcomingExpirations"),
       fetchDataByMode("SMADashboard"),
+      fetchDataByMode("Industry"),
+      fetchDataByMode("SMAApplication"),
     ]);
 
     console.log("ContractsSummary:", contractsSummary);
@@ -281,6 +846,8 @@ useEffect(() => {
     console.log("UpcomingExpirations:", expirations);
     console.log("ExpiredSMA:", ExpiredSMA);
     console.log("SMADashboard:", SMADashboard);
+    console.log("Industry:", SMADashboard);
+    console.log("SMAApplication:", SMAApplication);
 
     setContractsSummary(contractsSummary?.dashboard1 || []);
     setSmaSummary(smaSummary?.dashboard1 || []);
@@ -290,6 +857,8 @@ useEffect(() => {
     setExpiredSMA(ExpiredSMA?.dashboard1 || []);
     setUpcomingExpirations(expirations?.dashboard1 || []);
     setSMADashboard(SMADashboard?.dashboard1 || []);
+    setIndustry(Industry?.dashboard1 || []);
+    setSMAApplication(SMAApplication?.dashboard1 || []);
   };
 
   loadDashboard();
@@ -359,8 +928,34 @@ useEffect(() => {
         </div> */}
 
 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
+
   <SystemsBarChart data={systemUsage || []} />
-  <SMABarChart data={SMADashboard || []} />
+  {/* <SystemsPieChart data={systemUsage || []} /> */}
+  {/* <SystemsAreaChart data={systemUsage || []} /> */}
+  {/* <SystemsComposedChart data={systemUsage || []} /> */}
+  {/* <SystemsRadarChart  data={systemUsage || []} /> */}
+  {/* <SystemsScatterChart  data={systemUsage || []} /> */}
+  {/* <SystemsLineChart  data={systemUsage || []} /> */}
+
+  {/* <SMABarChart data={SMADashboard || []} /> */}
+  <SMAPieChart data={SMADashboard || []} />
+  {/* <SMAAreaChart data={SMADashboard || []} /> */}
+  {/* <SMALineChart data={SMADashboard || []} /> */}
+  {/* <SMAComposedChart data={SMADashboard || []} /> */}
+  {/* <SMARadarChart data={SMADashboard || []} /> */}
+  {/* <SMAScatterChart data={SMADashboard || []} /> */}
+
+
+
+  {/* <IndustryBarChart data={Industry || []} /> */}
+  <IndustryPieChart data={Industry || []} />
+  {/* <IndustryAreaChart data={Industry || []} /> */}
+  {/* <IndustryLineChart data={Industry || []} /> */}
+  {/* <IndustryComposedChart data={Industry || []} /> */}
+  {/* <IndustryRadarChart data={Industry || []} /> */}
+  {/* <IndustryScatterChart data={Industry || []} /> */}
+
+  <SMAApplicationBarChart data={SMAApplication || []} />
 </div>
 
 {/* Dashboard Summary Section */}
