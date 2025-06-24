@@ -73,7 +73,7 @@ const FileUploadModal = ({
         </div>
         
         <div className="mb-4">
-          <label className="block text-gray-700 mb-2">Select File (10MB max)</label>
+          <label className="block text-gray-700 mb-2">Select File (1GB max)</label>
           <input 
             type="file" 
             onChange={handleFileChange}
@@ -83,7 +83,7 @@ const FileUploadModal = ({
               file:text-sm file:font-semibold
               file:bg-blue-50 file:text-blue-700
               hover:file:bg-blue-100"
-            accept=".pdf"
+            accept=".pdf, .docx"
           />
         </div>
         

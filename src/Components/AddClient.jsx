@@ -381,7 +381,7 @@ useEffect(() => {
 
   const fetchClientFiles = async () => {
     try {
-      const apiBase = 'http://192.168.1.15:82/api';
+      const apiBase = 'http://Server1:82/api';
 
       const [csResponse, toResponse, smaResponse] = await Promise.all([
         fetch(`${apiBase}/client-files/${client.client_code}/clientService`, {
@@ -418,7 +418,7 @@ useEffect(() => {
   console.log('[fetchClientData] Fetching data for client:', clientCode, appType);
   setIsLoading(true);
 
-  const apiBase = 'http://192.168.1.15:82/api';
+  const apiBase = 'http://Server1:82/api';
 
   try {
     const token = localStorage.getItem('token');
@@ -572,7 +572,7 @@ useEffect(() => {
 
 const fetchDefaultClientCode = async () => {
   try {
-    const apiBase = 'http://192.168.1.15:82/api';
+    const apiBase = 'http://Server1:82/api';
 
     const response = await fetch(`${apiBase}/clients/default-code`, {
       headers: {
@@ -705,7 +705,7 @@ useEffect(() => {
 
   const handleFileSelect = async (files, uploadDate, signedDate) => {
 
-    const apiBase = 'http://192.168.1.15:82/api';
+    const apiBase = 'http://Server1:82/api';
 
 
   if (files.length === 0) return { success: false, message: 'No files selected' };
@@ -857,7 +857,7 @@ const handleDeleteFile = async (file) => {
   if (!result.isConfirmed) return;
 
   try {
-    const response = await axios.delete(`http://192.168.1.15:82/api/files/${file.file_id}`);
+    const response = await axios.delete(`http://Server1:82/api/files/${file.file_id}`);
     if (response.data.success) {
       Swal.fire('Deleted!', response.data.message, 'success');
       fetchClientFiles(); // Refresh list
@@ -875,7 +875,7 @@ const handleDeleteFile = async (file) => {
   const handleViewFile = async (file) => {
 
     const getApiBase = () => {
-      return 'http://192.168.1.15:82/api';
+      return 'http://Server1:82/api';
     };
 
     try {
@@ -908,7 +908,7 @@ const handleDeleteFile = async (file) => {
   
   const handleDownloadFile = async (file) => {
     const getApiBase = () => {
-      return 'http://192.168.1.15:82/api';
+      return 'http://Server1:82/api';
     };
     
     try {
@@ -1256,7 +1256,7 @@ const clientContactPayload = (client.contact_persons || [])
 };
 
 
-    const apiBase = 'http://192.168.1.15:82/api';
+    const apiBase = 'http://Server1:82/api';
 
     const response = await axios.post(`${apiBase}/client/save`, payload, {
       headers: {

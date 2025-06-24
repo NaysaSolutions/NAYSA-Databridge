@@ -6,7 +6,8 @@ const FileUpload = ({ isOpen, onClose, onFileSelect, isLoading }) => {
   const [signedDate, setSignedDate] = useState("");
 
   const handleFileChange = (e) => {
-  const MAX_FILE_SIZE = 1024 * 1024 * 1024; // 1 GB in bytes
+  const MAX_FILE_SIZE = 10 * 1024 * 1024 * 1024; // 10 GB in bytes
+  const ALLOWED_TYPES = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']; // .pdf and .docx
 
   const newFiles = Array.from(e.target.files).map(file => ({
     file,
@@ -16,16 +17,23 @@ const FileUpload = ({ isOpen, onClose, onFileSelect, isLoading }) => {
   }));
 
   const tooLargeFiles = newFiles.filter(f => f.size > MAX_FILE_SIZE);
+  const invalidTypeFiles = newFiles.filter(f => !ALLOWED_TYPES.includes(f.type));
 
   if (tooLargeFiles.length > 0) {
-    alert("One or more files exceed the 1 GB size limit and will not be uploaded.");
+    alert("One or more files exceed the 10 GB size limit and will not be uploaded.");
   }
 
-  // Keep only files under 1 GB
-  const validFiles = newFiles.filter(f => f.size <= MAX_FILE_SIZE);
+  if (invalidTypeFiles.length > 0) {
+    alert("Only PDF and DOCX files are allowed. One or more selected files are not supported.");
+  }
+
+  const validFiles = newFiles.filter(f =>
+    f.size <= MAX_FILE_SIZE && ALLOWED_TYPES.includes(f.type)
+  );
 
   setFiles(validFiles);
 };
+
 
   const removeFile = (index) => {
     const updatedFiles = [...files];
