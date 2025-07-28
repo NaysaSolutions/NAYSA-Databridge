@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBell, faUser, faSignOutAlt, faArrowLeft, faArrowUp } from "@fortawesome/free-solid-svg-icons";
+import { faMagnifyingGlass, faBell, faUser, faSignOutAlt, faArrowLeft, faArrowUp, faTimesCircle  } from "@fortawesome/free-solid-svg-icons";
 import { useNavigate, useLocation } from "react-router-dom";
 import { FaMinus, FaPlus } from "react-icons/fa";
 import axios from 'axios';
@@ -8,6 +8,7 @@ import Swal from 'sweetalert2';
 import bcrypt from 'bcryptjs';
 import { Eye, EyeOff } from 'lucide-react'
 import { FaTrash, FaDownload, FaEye } from 'react-icons/fa';
+import { GetAPI } from "../api";
 
 
 import FileUpload from "./FileUpload";
@@ -24,6 +25,7 @@ const [clientcontracts, setClientContracts] = useState({});
   const location = useLocation();
   const fileInputRef = useRef(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [showFileModal, setShowFileModal] = useState(false);
   const [currentFileType, setCurrentFileType] = useState('');
   const [fileSignedDate, setFileSignedDate] = useState("");
@@ -37,6 +39,7 @@ const [isEditingHelpdesk, setIsEditingHelpdesk] = useState(false);
 
 const toggleFields = [
   { label: "CAS", key: "cas" },
+  { label: "EIS", key: "eis" },
   { label: "Live", key: "live" },
   { label: "SMA", key: "with_sma" },
   { label: "FS Live", key: "fs_live" },
@@ -44,7 +47,7 @@ const toggleFields = [
 ];
 
 const toggleVisibilityMap = {
-  "FINANCIALS": ["cas", "live", "with_sma", "fs_live", "active"],
+  "FINANCIALS": ["cas", "eis", "live", "with_sma", "fs_live", "active"],
   "HR-PAY": ["live", "with_sma", "active"],
   "REALTY": ["live", "with_sma", "active"],
   "WMS": ["live", "with_sma", "active"],
@@ -66,14 +69,21 @@ const [smaInformationFiles, setSmaInformationFiles] = useState([]);
   const [editedFiles, setEditedFiles] = useState({});
   const [isSaving, setIsSaving] = useState(false);
   const [isViewMode, setIsViewMode] = useState(false);
+  const [clients, setClients] = useState([]);
+  const [filteredClients, setFilteredClients] = useState([]);
+const [searchTerm, setSearchTerm] = useState('')
   
 
   const [activeTab, setActiveTab] = useState("Contact Information");
 
   // START MODULE
 
+
+  
+
 const mapTogglesToYN = (toggles) => ({
   cas: toggles.cas ? "Y" : "N",
+  eis: toggles.eis ? "Y" : "N",  // Add this line
   live: toggles.live ? "Y" : "N",
   with_sma: toggles.with_sma ? "Y" : "N",
   fs_live: toggles.fs_live ? "Y" : "N",
@@ -158,6 +168,7 @@ const [tabOtherModules, setTabOtherModules] = useState({
 // Now you can safely access these
 const technicianInputs = tabTechnicians[activeTopTab] || [""];
 const selectedModules = tabModules[activeTopTab] || [];
+const [industries, setIndustries] = useState([]);
 
 
 const handleModuleToggle = (module) => {
@@ -188,6 +199,26 @@ const handleModuleToggle = (module) => {
     };
   });
 };
+
+useEffect(() => {
+  const fetchIndustries = async () => {
+    try {
+      const response = await axios.get('http://Server1:82/api/client-industries', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (response.data) {
+        setIndustries(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching industries:', error);
+    }
+  };
+
+  fetchIndustries();
+}, []);
+
 
 
 
@@ -234,7 +265,6 @@ const removeTechnicianInput = (index) => {
   client_code: "",
   client_name: "",
   main_address: "",
-  remarks: "",
   // contract_date: "",
   industry: "",
   remote_id: "",
@@ -242,28 +272,32 @@ const removeTechnicianInput = (index) => {
   server_pw: "",
   helpdesk: "",
   app_type: "",
+  parentCompanyCode: '', 
+  parentCompanyName: '', 
+  is_group: false,    
+  remarks: "",    
   contact_persons: ["", ""]
 });
+const [loading, setLoading] = useState(false);
 
 
 // const [clientcontracts, setClientContracts] = useState({});
 
 
-
-const initialToggleStatePerTab = {
+const initialToggleState = {
   cas: false,
+  eis: false,
   live: false,
   with_sma: false,
   fs_live: false,
-  active: false
+  active: false,
 };
 
 const [toggles, setToggles] = useState({
-  "FINANCIALS": { ...initialToggleStatePerTab },
-  "HR-PAY": { ...initialToggleStatePerTab },
-  "REALTY": { ...initialToggleStatePerTab },
-  "WMS": { ...initialToggleStatePerTab },
-  // add other tabs as needed
+  "FINANCIALS": { ...initialToggleState },
+  "HR-PAY": { ...initialToggleState },
+  "REALTY": { ...initialToggleState },
+  "WMS": { ...initialToggleState },
 });
 
 
@@ -349,6 +383,43 @@ useEffect(() => {
   }
 }, [location.state, activeTopTab]);
 
+const fetchClients = async () => {
+  setLoading(true);
+  try {
+    const response = await GetAPI("getClients");
+    const data = response.data.data;
+
+    console.log("Fetched clients:", data);
+
+    if (Array.isArray(data)) {
+      // Filter only clients with flag === 'Y'
+      const filtered = data.filter(client => client.flag === 'Y');
+
+      // Sort alphabetically by client_name
+      const sortedData = [...filtered].sort((a, b) =>
+        a.client_name.localeCompare(b.client_name)
+      );
+
+      setClients(sortedData);
+      setFilteredClients(sortedData);
+    } else {
+      console.error("Expected array but got:", data);
+    }
+  } catch (error) {
+    console.error("Error fetching clients:", error);
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+
+
+const openClientModal = () => {
+  setShowModal(true);
+  fetchClients();
+};
+
 
 
   // Fetch client files when client code changes
@@ -380,39 +451,44 @@ useEffect(() => {
 
 
   const fetchClientFiles = async () => {
-    try {
-      const apiBase = 'http://Server1:82/api';
+  try {
+    const apiBase = 'http://Server1:82/api';
 
-      const [csResponse, toResponse, smaResponse] = await Promise.all([
-        fetch(`${apiBase}/client-files/${client.client_code}/clientService`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        }),
-        fetch(`${apiBase}/client-files/${client.client_code}/turnOver`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        }),
-        fetch(`${apiBase}/client-files/${client.client_code}/smaInformation`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        })
-      ]);
+    const [csResponse, toResponse, smaResponse] = await Promise.all([
+      fetch(`${apiBase}/client-files/${client.client_code}/clientService`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      }),
+      fetch(`${apiBase}/client-files/${client.client_code}/turnOver`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      }),
+      fetch(`${apiBase}/client-files/${client.client_code}/smaInformation`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      })
+    ]);
 
-      const csData = await csResponse.json();
-      const toData = await toResponse.json();
-      const smaData = await smaResponse.json();
+    const csData = await csResponse.json();
+    const toData = await toResponse.json();
+    const smaData = await smaResponse.json();
 
-      if (csData.success) setclientServiceFiles(csData.files);
-      if (toData.success) setTurnOverFiles(toData.files);
-      if (smaData.success) setSmaInformationFiles(smaData.files);
+    // Ensure we're setting the full array of files, not merging
+    if (csData.success) setclientServiceFiles(csData.files || []);
+    if (toData.success) setTurnOverFiles(toData.files || []);
+    if (smaData.success) setSmaInformationFiles(smaData.files || []);
 
-    } catch (error) {
-      console.error('Error fetching files:', error);
-    }
-  };
+  } catch (error) {
+    console.error('Error fetching files:', error);
+    // Optionally show error to user
+    Swal.fire('Error', 'Failed to fetch files. Please try again.', 'error');
+  }
+};
+
+
 
   const fetchClientData = async (clientCode, appType) => {
   console.log('[fetchClientData] Fetching data for client:', clientCode, appType);
@@ -467,23 +543,28 @@ useEffect(() => {
         : [];
 
     const formatDate = (date) => {
-      if (!date) return null;
-      const d = new Date(date);
-      if (isNaN(d)) return null;
-      const year = d.getFullYear();
-      const month = (`0${d.getMonth() + 1}`).slice(-2);
-      const day = (`0${d.getDate()}`).slice(-2);
-      return `${year}-${month}-${day}`;
-    };
+  if (!date || date === '1900-01-01' || date === '0000-00-00') return null;
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return null;
+  const year = d.getFullYear();
+  const month = (`0${d.getMonth() + 1}`).slice(-2);
+  const day = (`0${d.getDate()}`).slice(-2);
+  return `${year}-${month}-${day}`;
+};
 
     const contractsForAppType = contracts.filter(c => c.app_type === appType);
     const contractForAppType = contractsForAppType.length > 0 ? contractsForAppType[0] : null;
 
     const formattedContractsForAppType = contractsForAppType.map(c => ({
-      ...c,
-      contract_date: c.contract_date ? formatDate(c.contract_date) : null,
-      sma_date: c.sma_date ? formatDate(c.sma_date) : null,
-    }));
+    ...c,
+    contract_date: c.contract_date ? formatDate(c.contract_date) : null,
+    sma_date: c.sma_date ? formatDate(c.sma_date) : null,
+    date_issued: c.date_issued ? formatDate(c.date_issued) : null,
+    effectivity_date: c.effectivity_date ? formatDate(c.effectivity_date) : null,
+    casStatus: c.casStatus || '',
+    ac_no: c.ac_no || '',
+    release_no: c.release_no || ''
+  }));
 
     setClientContracts(prev => ({
   ...prev,
@@ -494,6 +575,7 @@ useEffect(() => {
       ...prev,
       [appType]: {
         cas: contractForAppType?.cas === "Y",
+        eis: contractForAppType?.eis === "Y",
         fs_live: contractForAppType?.fs_live === "Y",
         live: contractForAppType?.live === "Y",
         with_sma: contractForAppType?.with_sma === "Y",
@@ -507,11 +589,19 @@ useEffect(() => {
       main_address: clientData.main_address || '',
       remarks: clientData.remarks || '',
       industry: clientData.industry || '',
+      is_group: clientData.flag === 'Y',
+      parentCompanyName: clientData.principal_client || '',
+      parentCompanyCode: clientData.principal_client_code || '',
       remote_id: clientData.remote_id || '',
       remote_pw: clientData.remote_pw || '',
       server_pw: clientData.server_pw || '',
       helpdesk: clientData.helpdesk || '',
       app_type: clientData.appType || '',
+      casStatus: clientData?.casStatus || '',
+      ac_no: clientData.ac_no || '',
+      date_issued: clientData.date_issued || '',
+      release_no: clientData.release_no || '',
+      effectivity_date: clientData.effectivity_date || '',
 
       client_contract: contractsForAppType.map(c => ({
         app_type: c.app_type,
@@ -526,12 +616,18 @@ useEffect(() => {
         contract_date: formatDate(c.contract_date || ''),
         sma_date: formatDate(c.sma_date || ''),
         cas: c.cas || 'N',
+        eis: c.eis || 'N',
         live: c.live || 'N',
         with_sma: c.with_sma || 'N',
         fs_live: c.fs_live || 'N',
         active: c.active || 'N',
         sma_days: Number(c.sma_days) || 0,
         sma_consumed: Number(c.sma_consumed) || 0,
+        casStatus: c.casStatus || '',
+        ac_no: c.ac_no || '',
+        date_issued: formatDate(c.date_issued || ''),
+        release_no: c.release_no || '',
+        effectivity_date: formatDate(c.effectivity_date || '')
       }))
     };
 
@@ -606,16 +702,8 @@ const fetchDefaultClientCode = async () => {
   };
 
 
-const initialToggleState = {
-  cas: false,
-  live: false,
-  with_sma: false,
-  fs_live: false,
-  active: false,
-};
 
 const handleToggle = (key) => {
-  // Update toggles UI state (booleans)
   setToggles(prev => {
     const currentTabToggles = prev[activeTopTab] || { ...initialToggleState };
     const newValue = !currentTabToggles[key];
@@ -628,34 +716,13 @@ const handleToggle = (key) => {
     };
   });
 
-  // Update clientContracts state (strings "Y"/"N")
+  // Also update clientcontracts immediately
   setClientContracts(prev => {
-    const currentContracts = prev[activeTopTab] || [{
-      app_type: activeTopTab,
-      cas: "N",
-      live: "N",
-      with_sma: "N",
-      fs_live: "N",
-      active: "N",
-      training_days: 0,
-      training_days_consumed: 0,
-      post_training_days: 0,
-      post_training_days_consumed: 0,
-      fs_generation_contract: 0,
-      fs_generation_consumed: 0,
-      numberOfUsers: 0,
-      numberOfEmployees: 0,
-      contract_date: '',
-      sma_date: '',
-      sma_days: 0,
-      sma_consumed: 0
-    }];
-
+    const currentContracts = prev[activeTopTab] || [{ ...initialToggleState }];
     const updatedContract = {
       ...currentContracts[0],
       [key]: currentContracts[0][key] === "Y" ? "N" : "Y"
     };
-
     return {
       ...prev,
       [activeTopTab]: [updatedContract],
@@ -676,6 +743,7 @@ useEffect(() => {
       [activeTopTab]: {
         ...prev[activeTopTab], // preserve previous toggle state
         cas: contract.cas === "Y",
+        eis: contract.eis === "Y",
         live: contract.live === "Y",
         with_sma: contract.with_sma === "Y",
         fs_live: contract.fs_live === "Y",
@@ -699,20 +767,24 @@ useEffect(() => {
   };
 
   const handleAddFileClick = (type) => {
-    setCurrentFileType(type);
-    setShowFileModal(true);
+  // Map UI labels to backend file types
+  const typeMapping = {
+    'Client Service Form': 'clientServiceForm',
+    'Turn-Over Documents': 'turnOver',
+    'SMA Information': 'smaInformation'
   };
+  setCurrentFileType(typeMapping[type] || type);
+  setShowFileModal(true);
+};
 
   const handleFileSelect = async (files, uploadDate, signedDate) => {
-
-    const apiBase = 'http://Server1:82/api';
-
-
   if (files.length === 0) return { success: false, message: 'No files selected' };
-  
+
+  const apiBase = 'http://Server1:82/api';
   setIsUploading(true);
+  
   try {
-    // Optimistically update UI with the new files
+    // Optimistic update - add temporary files
     const tempFiles = files.map(fileObj => ({
       id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       fileName: fileObj.file.name,
@@ -723,26 +795,17 @@ useEffect(() => {
       status: 'uploading'
     }));
 
-    // Update the appropriate file list immediately using functional update
-    const updateFileState = (prevFiles) => [...prevFiles, ...tempFiles];
-    
-    switch(currentFileType) {
-      case 'clientServiceForm':
-        setclientServiceFiles(updateFileState);
-        break;
-      case 'turnOver':
-        setTurnOverFiles(updateFileState);
-        break;
-      case 'smaInformation':
-        setSmaInformationFiles(updateFileState);
-        break;
-      default:
-        break;
+    // Update state immediately with temp files
+    if (currentFileType === 'clientServiceForm') {
+      setclientServiceFiles(prev => [...prev, ...tempFiles]);
+    } else if (currentFileType === 'turnOver') {
+      setTurnOverFiles(prev => [...prev, ...tempFiles]);
+    } else if (currentFileType === 'smaInformation') {
+      setSmaInformationFiles(prev => [...prev, ...tempFiles]);
     }
 
-    // Proceed with actual upload
+    // Upload files
     const results = [];
-    
     for (const fileObj of files) {
       const file = fileObj.file;
       
@@ -754,9 +817,7 @@ useEffect(() => {
         }
       });
       
-      if (!idResponse.ok) {
-        throw new Error(`Server returned ${idResponse.status}`);
-      }
+      if (!idResponse.ok) throw new Error(`Server returned ${idResponse.status}`);
       
       const idData = await idResponse.json();
       if (!idData.success || !idData.file_id) {
@@ -780,61 +841,65 @@ useEffect(() => {
         }
       });
 
-      if (!uploadResponse.ok) {
-        throw new Error('Upload failed');
-      }
-
+      if (!uploadResponse.ok) throw new Error('Upload failed');
       const result = await uploadResponse.json();
+      
       results.push({
-        file_id: idData.file_id,
-        original_name: file.name,
-        upload_date: uploadDate,
-        signed_date: signedDate,
-        file_type: currentFileType,
-        path: result.path
-      });
+  id: idData.file_id, // ✅ ADD THIS LINE
+  file_id: idData.file_id,
+  original_name: file.name,
+  upload_date: uploadDate,
+  signed_date: signedDate,
+  file_type: currentFileType,
+  path: result.path
+});
     }
 
-    // Update state with final uploaded files (replacing temp files)
-    const updateFinalState = (prevFiles) => [
-      ...prevFiles.filter(f => !f.id?.includes('temp-')), // Remove temp files
-      ...results
-    ];
-
-    switch(currentFileType) {
-      case 'clientServiceForm':
-        setclientServiceFiles(updateFinalState);
-        break;
-      case 'turnOver':
-        setTurnOverFiles(updateFinalState);
-        break;
-      case 'smaInformation':
-        setSmaInformationFiles(updateFinalState);
-        break;
-      default:
-        break;
+    // After upload, update state with final files
+    if (currentFileType === 'clientServiceForm') {
+      setclientServiceFiles(prev => [
+        ...prev.filter(f => !f.id?.includes('temp-')),
+        ...results
+      ]);
+    } else if (currentFileType === 'turnOver') {
+      setTurnOverFiles(prev => [
+        ...prev.filter(f => !f.id?.includes('temp-')),
+        ...results
+      ]);
+    } else if (currentFileType === 'smaInformation') {
+      setSmaInformationFiles(prev => [
+        ...prev.filter(f => !f.id?.includes('temp-')),
+        ...results
+      ]);
     }
 
+    // Refresh files after upload
+    await fetchClientFiles();
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Upload Complete',
+      text: `${files.length} file(s) uploaded successfully`,
+    });
+    
     return { success: true, message: `${files.length} files uploaded successfully` };
     
   } catch (error) {
     console.error('Upload failed:', error);
     // Remove failed uploads from state
-    const removeTempFiles = (prevFiles) => prevFiles.filter(f => !f.id?.includes('temp-'));
-    
-    switch(currentFileType) {
-      case 'clientServiceForm':
-        setclientServiceFiles(removeTempFiles);
-        break;
-      case 'turnOver':
-        setTurnOverFiles(removeTempFiles);
-        break;
-      case 'smaInformation':
-        setSmaInformationFiles(removeTempFiles);
-        break;
-      default:
-        break;
+    if (currentFileType === 'clientServiceForm') {
+      setclientServiceFiles(prev => prev.filter(f => !f.id?.includes('temp-')));
+    } else if (currentFileType === 'turnOver') {
+      setTurnOverFiles(prev => prev.filter(f => !f.id?.includes('temp-')));
+    } else if (currentFileType === 'smaInformation') {
+      setSmaInformationFiles(prev => prev.filter(f => !f.id?.includes('temp-')));
     }
+    
+    Swal.fire({
+      icon: 'error',
+      title: 'Upload Failed',
+      text: error.message || 'Failed to upload files',
+    });
     
     return { success: false, message: error.message || 'Upload failed' };
   } finally {
@@ -965,7 +1030,12 @@ const handleDeleteFile = async (file) => {
     'fs_live',
     'active',
     'sma_days',
-    'sma_consumed'
+    'sma_consumed',
+    'casStatus',
+    'ac_no',
+    'date_issued',
+    'release_no',
+    'effectivity_date'
   ];
 
   if (contractFields.includes(name)) {
@@ -988,7 +1058,12 @@ const handleDeleteFile = async (file) => {
         contract_date: '',
         sma_date: '',
         sma_days: "",
-        sma_consumed: ""
+        sma_consumed: "",
+        casStatus: "",
+        ac_no: "",
+        date_issued: "",
+        release_no: "",
+        effectivity_date: ""
       }];
 
       let updatedValue = value;
@@ -1051,23 +1126,31 @@ const syncTogglesToContracts = () => {
     const updated = { ...prev };
     const currentToggles = toggles[activeTopTab] || {};
 
-    const contract = updated[activeTopTab] || {};
+    // Generate new contract data with toggles
     const newContract = {
-      ...contract,
+      ...updated[activeTopTab]?.[0], // existing contract
       cas: currentToggles.cas ? "Y" : "N",
+      eis: currentToggles.eis ? "Y" : "N",
       live: currentToggles.live ? "Y" : "N",
       with_sma: currentToggles.with_sma ? "Y" : "N",
       fs_live: currentToggles.fs_live ? "Y" : "N",
       active: currentToggles.active ? "Y" : "N"
     };
-
-    updated[activeTopTab] = newContract;
+    updated[activeTopTab] = [newContract];
     return updated;
   });
 };
 
 
 const handleSave = async () => {
+  // Step 1: Synchronize toggle states into clientcontracts
+  syncTogglesToContracts();
+
+  // Step 2: Prepare data payloads
+
+  
+
+  // Map for module codes
   const moduleCodeMap = {
     'General Ledger': 'GL',
     'Accounts Payable': 'AP',
@@ -1106,86 +1189,43 @@ const handleSave = async () => {
   try {
     setIsSaving(true);
 
-    // Filter out empty technician inputs for active tab
+    // 3. Prepare Technicians Payload
     const techniciansToSave = (tabTechnicians[activeTopTab] || []).filter(t => t !== "");
-
-    // Flatten all technicians across tabs with app_type
-    const clientTechnicalsPayload = Object.entries(tabTechnicians).flatMap(
-      ([appType, technicians]) =>
-        technicians
-          .filter(t => t !== "")
-          .map(t => {
-            const matches = t.match(/\(([^)]+)\)/);
-            const tech_code = matches ? matches[1] : t;
-            return {
-              tech_code,
-              app_type: appType
-            };
-          })
+    const clientTechnicalsPayload = Object.entries(tabTechnicians).flatMap(([appType, techs]) =>
+      techs
+        .filter(t => t !== "")
+        .map(t => {
+          const matches = t.match(/\(([^)]+)\)/);
+          const tech_code = matches ? matches[1] : t;
+          return { tech_code, app_type: appType };
+        })
     );
 
+    // 4. Prepare Modules Payload
+    const currentMainModules = tabMainModules[activeTopTab] || [];
+    const currentOtherModules = tabOtherModules[activeTopTab] || [];
+    const currentSelectedModules = tabModules[activeTopTab] || [];
 
+    const clientModulesPayload = Object.entries(tabModules).flatMap(([appType, selectedModules]) => {
+      const allowedModules = [
+        ...(tabMainModules[appType] || []),
+        ...(tabOtherModules[appType] || []),
+      ];
+      return selectedModules
+        .filter(moduleName => allowedModules.includes(moduleName))
+        .map(moduleName => ({
+          module_name: moduleName,
+          module_code: moduleCodeMap[moduleName] || null,
+          module_type: appType,
+        }));
+    });
 
-// const clientModulesPayload = Object.entries(tabModules).flatMap(
-//   ([appType, selectedModules]) => {
-//     // Combine main and other modules for this appType
-//     const allowedModules = [
-//       ...(tabMainModules[appType] || []),
-//       ...(tabOtherModules[appType] || []),
-//     ];
+    // 5. Prepare Contract Payload
+    const currentContract = clientcontracts[activeTopTab]?.[0] || {};
 
-//     return selectedModules
-//       .filter(moduleName => allowedModules.includes(moduleName)) // filter to only allowed modules
-//       .map(moduleName => ({
-//         module_name: moduleName,
-//         module_code: moduleCodeMap[moduleName] || null,
-//         module_type: appType
-//       }));
-//   }
-// );
-
-const clientModulesPayload = Object.entries(tabModules).flatMap(
-  ([appType, selectedModules]) => {
-    const allowedModules = [
-      ...(tabMainModules[appType] || []),
-      ...(tabOtherModules[appType] || []),
-    ];
-
-    // console.log(`AppType: ${appType}`);
-    // console.log(`Selected Modules:`, selectedModules);
-    // console.log(`Allowed Modules:`, allowedModules);
-
-    return selectedModules
-      .filter(moduleName => allowedModules.includes(moduleName)) // You can comment this line out temporarily
-      .map(moduleName => ({
-        module_name: moduleName,
-        module_code: moduleCodeMap[moduleName] || null,
-        module_type: appType
-      }));
-  }
-);
-
-console.log("Client Modules Payload:", clientModulesPayload);
-
-
-const clientContactPayload = (client.contact_persons || [])
-  .filter(p => p.contact_person?.trim()) // skip entries with no name
-  .map(p => ({
-    client_code: client.client_code,
-    contact_person: p.contact_person?.trim() || '',
-    position: p.position?.trim() || '',
-    contact_no: p.contact_no?.trim() || '',
-    email_add: p.email_add?.trim() || ''
-  }));
-
-
-
-
-
-    // Helper to format dates safely
-    const formatDate = (date) => {
-      if (!date) return '';
-      const d = new Date(date);
+    const formatDate = (dateStr) => {
+      if (!dateStr) return '';
+      const d = new Date(dateStr);
       if (isNaN(d)) return '';
       const year = d.getFullYear();
       const month = (`0${d.getMonth() + 1}`).slice(-2);
@@ -1193,14 +1233,7 @@ const clientContactPayload = (client.contact_persons || [])
       return `${year}-${month}-${day}`;
     };
 
-    // Map toggles (booleans) to "Y"/"N"
-    const togglesToContract = mapTogglesToYN(toggles[activeTopTab] || {});
-
-    // Get the current contract from state for active tab, fallback to empty object
-    const currentContract = clientcontracts[activeTopTab]?.[0] || {};
-
-    // Build contract payload for API
-    const clientContractPayload = [{
+    const contractPayload = [{
       app_type: activeTopTab,
       training_days: Number(currentContract.training_days) || 0,
       training_days_consumed: Number(currentContract.training_days_consumed) || 0,
@@ -1212,71 +1245,74 @@ const clientContactPayload = (client.contact_persons || [])
       numberOfEmployees: Number(currentContract.numberOfEmployees) || 0,
       contract_date: formatDate(currentContract.contract_date),
       sma_date: formatDate(currentContract.sma_date),
-      cas: togglesToContract.cas,
-      live: togglesToContract.live,
-      with_sma: togglesToContract.with_sma,
-      fs_live: togglesToContract.fs_live,
-      active: togglesToContract.active,
+      cas: currentContract.cas || 'N',
+      eis: currentContract.eis || 'N',
+      live: currentContract.live || 'N',
+      with_sma: currentContract.with_sma || 'N',
+      fs_live: currentContract.fs_live || 'N',
+      active: currentContract.active || 'N',
       sma_days: Number(currentContract.sma_days) || 0,
       sma_consumed: Number(currentContract.sma_consumed) || 0,
+      casStatus: currentContract.casStatus || '',
+      ac_no: currentContract.ac_no || '',
+      date_issued: formatDate(currentContract.date_issued),
+      release_no: currentContract.release_no || '',
+      effectivity_date: formatDate(currentContract.effectivity_date),
     }];
 
-    // Log payload for debugging
-    console.log('Saving client contract payload:', clientContractPayload);
-    console.log('Saving client contact payload:', client.contact_persons);
+    // 6. Prepare Contact Persons Payload
+    const contactPersonsPayload = (client.contact_persons || [])
+      .filter(p => p.contact_person?.trim())
+      .map(p => ({
+        client_code: client.client_code,
+        contact_person: p.contact_person?.trim() || '',
+        position: p.position?.trim() || '',
+        contact_no: p.contact_no?.trim() || '',
+        email_add: p.email_add?.trim() || ''
+      }));
 
-    // Extract technician codes for active tab (not really used below, but keep if needed)
-    const technicianCodes = techniciansToSave.map(tech => {
-      const matches = tech.match(/\(([^)]+)\)/);
-      return matches ? matches[1] : tech;
-    });
-
+    // 7. Prepare Final Payload
     const payload = {
-  mode: 'Upsert',
-  params: JSON.stringify({
-    json_data: {
-      client_code: client.client_code,
-      client_name: client.client_name,
-      main_address: client.main_address,
-      remarks: client.remarks,
-      industry: client.industry,
-      remote_id: client.remote_id,
-      remote_pw: client.remote_pw,
-      server_pw: client.server_pw,
-      helpdesk: client.helpdesk,
-    client_modules: clientModulesPayload,
-    client_technicals: clientTechnicalsPayload,
-    client_contract: clientContractPayload,
-    client_contact: clientContactPayload,
-      },
-    // client_contact: client.contact_persons // ✅ ADD THIS LINE
-  
-    // client_contact: client.contact_persons // ✅ ADD THIS LINE
-  })
-};
+      mode: 'Upsert',
+      params: JSON.stringify({
+        json_data: {
+          client: {
+            client_code: client.client_code,
+            client_name: client.client_name,
+            main_address: client.main_address,
+            remarks: client.remarks || '',
+            industry: client.industry,
+            flag: client.is_group ? 'Y' : 'N',
+            principal_client: client.parentCompanyName || '',
+            principal_client_code: client.parentCompanyCode || '',
+            remote_id: client.remote_id,
+            remote_pw: client.remote_pw,
+            server_pw: client.server_pw,
+            helpdesk: client.helpdesk,
+          },
+          modules: clientModulesPayload,
+          technicals: clientTechnicalsPayload,
+          contracts: contractPayload,
+          contacts: contactPersonsPayload,
+        },
+      }),
+    };
 
-
+    // 8. API Call
     const apiBase = 'http://Server1:82/api';
-
     const response = await axios.post(`${apiBase}/client/save`, payload, {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
         'Content-Type': 'application/json',
-      }
+      },
     });
 
     if (response.data.success) {
       await Swal.fire({
         icon: 'success',
         title: 'Success',
-        text: 'Client data saved successfully'
+        text: 'Client data saved successfully',
       });
-
-      // if (!isViewMode) {
-      //   navigate(`/client/${client.client_code}`, {
-      //     state: { ...client, client_code: client.client_code }
-      //   });
-      // }
     } else {
       throw new Error(response.data.message || 'Save failed');
     }
@@ -1285,13 +1321,12 @@ const clientContactPayload = (client.contact_persons || [])
     Swal.fire({
       icon: 'error',
       title: 'Error',
-      text: `Error saving client: ${error.message}`
+      text: `Error saving client: ${error.message}`,
     });
   } finally {
     setIsSaving(false);
   }
 };
-
 
 const updateContactField = (index, field, value) => {
   setClient(prev => {
@@ -1412,8 +1447,8 @@ const currentContract = clientcontracts[activeTopTab]?.[0] || {};
       </button>
 
       {/* Title */}
-      <div className="sticky top-0 z-50 bg-blue-600 shadow-xl p-6 mb-6 rounded-lg text-white">
-        <h1 className="text-2xl font-semibold">
+      <div className="sticky top-0 z-50 bg-blue-600 shadow-xl p-4 mb-6 rounded-lg text-white">
+        <h1 className="text-xl font-semibold">
           {isViewMode
             ? `Client Information${client.client_name ? `: ${client.client_name}` : ""}`
             : "Add New Client Information"}
@@ -1450,27 +1485,105 @@ const currentContract = clientcontracts[activeTopTab]?.[0] || {};
 
         </div>
 
+{/* Industry and Group Section */}
+<div className="grid grid-cols-[300px_100px_250px_1fr] gap-2 mb-4">
 
-          <div className="mb-4 text-sm">
-            <label className="block font-bold text-gray-800 mb-2 text-sm">Industry</label>
-            <select
-              name="industry"
-              value={client.industry || ""}
-              onChange={handleChange}
-              className="mt-1 p-2 border border-gray-300 rounded-lg w-full"
-            >
-              <option value="">Select an industry</option>
-              <option value="Manufacturing">Automotive</option>
-              <option value="Retail">Retail</option>
-              <option value="Healthcare">Manufacturing</option>
-              <option value="Technology">Technology</option>
-              <option value="Finance">Finance</option>
-              <option value="Education">Education</option>
-              <option value="Construction">Construction</option>
-              <option value="Transportation">Transportation</option>
-              <option value="Hospitality">Hospitality</option>
-            </select>
-          </div>
+  {/* Industry */}
+  <div className="text-sm">
+    <label className="block font-bold text-gray-800 mb-1 text-sm">Industry</label>
+    <select
+      name="industry"
+      value={client.industry || ""}
+      onChange={handleChange}
+      className="mt-1 p-2 border border-gray-300 rounded-lg w-full"
+    >
+      <option value="">Select an industry</option>
+      {industries.map((item) => (
+        <option key={item.code} value={item.industry}>
+          {item.industry}
+        </option>
+      ))}
+    </select>
+  </div>
+
+  {/* Group Dropdown */}
+  <div className="text-sm">
+    <label className="block font-bold text-gray-800 mb-1 text-sm">Group</label>
+    <select
+      name="is_group"
+      value={client.is_group ? "Yes" : "No"}
+      onChange={(e) =>
+        setClient((prev) => ({
+          ...prev,
+          is_group: e.target.value === "Yes",
+          parentCompanyCode: e.target.value === "Yes" ? prev.client_code : '',
+          parentCompanyName: e.target.value === "Yes" ? prev.client_name : '',
+        }))
+      }
+      className="mt-1 p-2 border border-gray-300 rounded-lg w-full"
+    >
+      <option value="No">No</option>
+      <option value="Yes">Yes</option>
+    </select>
+  </div>
+
+  {/* Parent Company Code */}
+<div className="text-sm" style={{ width: "250px" }}>
+  <label className="block font-bold text-gray-800 mb-2 text-sm">Parent Company Code</label>
+  <div className="flex relative">
+    <input
+      type="text"
+      value={client.parentCompanyCode}
+      readOnly
+      className="p-2 border border-gray-300 rounded-l-lg w-full cursor-pointer bg-white"
+      onClick={() => setShowModal(true)}
+    />
+
+    <button
+      type="button"
+      onClick={openClientModal}
+      className="bg-blue-600 hover:bg-blue-700 text-white px-4 rounded-r-lg"
+    >
+      <FontAwesomeIcon icon={faMagnifyingGlass} />
+    </button>
+  </div>
+</div>
+
+{/* Parent Company Name */}
+<div className="text-sm relative w-full">
+  <label className="block font-bold text-gray-800 mb-1 text-sm">Parent Company Name</label>
+  <input
+    type="text"
+    name="group_name"
+    value={client.parentCompanyName}
+    onChange={handleChange}
+    className="mt-1 p-2 border border-gray-300 rounded-lg w-full pr-8"
+  />
+
+  {/* X button to clear */}
+  {client.parentCompanyName && (
+    <button
+      type="button"
+      onClick={() =>
+        setClient(prev => ({
+          ...prev,
+          is_group: false,
+          parentCompanyCode: '',
+          parentCompanyName: '',
+        }))
+      }
+      className="absolute right-2 top-[38px] text-gray-400 hover:text-red-600"
+    >
+      <FontAwesomeIcon icon={faTimesCircle} />
+    </button>
+  )}
+</div>
+
+
+
+</div>
+
+
 
         {/* Address */}
         <div className="mb-4 text-sm">
@@ -1485,20 +1598,20 @@ const currentContract = clientcontracts[activeTopTab]?.[0] || {};
         </div>
 
         {/* Remarks */}
-        <div className="mb-4 text-sm">
-          <label className="block font-bold text-gray-800 mb-2 text-sm">Remarks</label>
-          <textarea
-            type="text"
-            name="remarks"
-            value={client.remarks || ""}
-            onChange={handleChange}
-            className="mt-1 p-2 border border-gray-300 rounded-lg w-full h-[80px] text-sm"
-          />
-        </div>
+<div className="mb-4 text-sm">
+  <label className="block font-bold text-gray-800 mb-2 text-sm">Remarks</label>
+  <textarea
+    type="text"
+    name="remarks"
+    value={client.remarks || ""}
+    onChange={handleChange}
+    className="mt-1 p-2 border border-gray-300 rounded-lg w-full h-[80px] text-sm"
+  />
+</div>
 
 {/* APPLICATION TABS */}
-<div className="mt-6 text-sm lg:text-base bg-blue-100">
-  <div className="grid grid-cols-2 sm:flex sm:justify-between bg-blue-600 text-white rounded-t-xl px-4 py-2 gap-2">
+<div className="mt-6 text-sm lg:text-base bg-blue-100 rounded-xl">
+  <div className="grid grid-cols-2 sm:flex sm:justify-between bg-blue-600 text-white rounded-t-xl px-2 py-2 gap-2">
     {["FINANCIALS", "HR-PAY", "REALTY", "WMS"].map((tab) => (
       <button
         key={tab}
@@ -1580,13 +1693,13 @@ const currentContract = clientcontracts[activeTopTab]?.[0] || {};
   </div>
 
   {/* Toggles */}
-  <div className="w-full lg:w-1/3 bg-white rounded-xl shadow p-4 border">
+  <div className="w-full lg:w-2/5 bg-white rounded-xl shadow p-4 border">
     <h2 className="text-base font-semibold text-blue-800 mb-4">Status Flags</h2>
     <div className="flex flex-wrap justify-center gap-2">
       {toggleFields
         .filter(({ key }) => (toggleVisibilityMap[activeTopTab] ?? []).includes(key))
         .map(({ label, key }) => (
-          <div key={key} className="flex flex-col items-center w-20">
+          <div key={key} className="flex flex-col items-center w-16">
             <span className="text-sm font-medium text-gray-600 text-center">{label}</span>
             <button
               className={`relative w-10 h-6 transition duration-200 ease-in-out rounded-full ${
@@ -1607,7 +1720,72 @@ const currentContract = clientcontracts[activeTopTab]?.[0] || {};
 
 </div>
 
+{/* //ac no//dateissue//releaseno//effectivity */}
 
+  {/* BIR CAS Information Section */}
+  {currentContract.cas === 'Y' && (
+    <div className="bg-white rounded-xl shadow p-4 border">
+      <h2 className="text-base font-semibold text-blue-800 mb-4">BIR CAS Information</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
+      <div>
+        <label className="block text-sm font-bold text-blue-700 mb-1">CAS Status</label>
+        <select
+          name="casStatus"
+          value={currentContract.casStatus || ''}
+          onChange={handleChange}
+          className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
+        >
+          <option value="Pending">Pending Master Data</option>
+          <option value="Ongoing">Ongoing Documentation</option>
+          <option value="Completed">Completed Documentation</option>
+          <option value="Waiting">Waiting BIR Approval</option>
+          <option value="Approved">Approved</option>
+        </select>
+      </div>
+      <div>
+        <label className="block text-sm font-bold text-blue-700 mb-1">Acknowledgement Certificate No.</label>
+        <input
+          type="text"
+          name="ac_no"
+          value={currentContract.ac_no || ''}
+          onChange={handleChange}
+          className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-bold text-blue-700 mb-1">Date Issued</label>
+        <input
+          type="date"
+          name="date_issued"
+          value={currentContract.date_issued || ''}
+          onChange={handleChange}
+          className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-bold text-blue-700 mb-1">Release No.</label>
+        <input
+          type="text"
+          name="release_no"
+          value={currentContract.release_no || ''}
+          onChange={handleChange}
+          className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-bold text-blue-700 mb-1">Effectivity Date</label>
+        <input
+          type="date"
+          name="effectivity_date"
+          value={currentContract.effectivity_date || ''}
+          onChange={handleChange}
+          className="w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
+        />
+      </div>
+    </div>
+  </div>
+  )}
+{/* </div> */}
 
     {/* Training Days Section */}
     <div className="bg-white rounded-xl shadow p-4 border">
@@ -2608,7 +2786,7 @@ const currentContract = clientcontracts[activeTopTab]?.[0] || {};
 
 
         {/* Save Button */}
-        <div className="flex justify-center pt-6">
+        {/* <div className="flex justify-center pt-6">
           <button
             onClick={handleSave}
             disabled={isSaving}
@@ -2644,7 +2822,7 @@ const currentContract = clientcontracts[activeTopTab]?.[0] || {};
               isViewMode ? "Update" : "Save"
             )}
           </button>
-        </div>
+        </div> */}
       </div>
       
 
@@ -2679,8 +2857,8 @@ const currentContract = clientcontracts[activeTopTab]?.[0] || {};
         </div> */}
 
         {/* APPLICATION TABS */}
-<div className="mt-6 text-sm lg:text-base bg-blue-100">
-  <div className="grid grid-cols-2 sm:flex sm:justify-between bg-blue-600 text-white rounded-t-xl px-4 py-2 gap-2">
+<div className="mt-6 text-sm lg:text-base bg-blue-100 rounded-xl">
+  <div className="grid grid-cols-2 sm:flex sm:justify-between bg-blue-600 text-white rounded-t-xl px-2 py-2 gap-2">
   {["Contact Information", "Server Information", "Attachment", "SMA Information"].map((tab) => (
     <button
       key={tab}
@@ -2688,7 +2866,7 @@ const currentContract = clientcontracts[activeTopTab]?.[0] || {};
         setActiveTab(tab);
         if (tab === "Attachment") setSelectedAttachmentType(null);
       }}
-      className={`w-full text-center px-4 py-2 font-semibold rounded-t-md transition-all duration-100
+      className={`w-full text-center px-2 py-2 font-semibold rounded-t-md transition-all duration-100
         ${
           activeTab === tab
             ? "bg-white text-blue-600 shadow-md border-b-2 border-blue-600"
@@ -2764,7 +2942,7 @@ const currentContract = clientcontracts[activeTopTab]?.[0] || {};
 
     {/* Contact inputs */}
     {(client.contact_persons || []).map((person, index) => (
-      <div key={index} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_1fr_auto] gap-2 border p-2 rounded shadow-sm items-center bg-white text-sm">
+  <div key={`contact-${index}-${person.contact_person || 'new'}`} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_1fr_auto] gap-2 border p-2 rounded shadow-sm items-center bg-white text-sm">
         <input
           type="text"
           value={person.contact_person || ''}
@@ -2885,60 +3063,44 @@ const currentContract = clientcontracts[activeTopTab]?.[0] || {};
  {/* Attachment Tab */}
 {activeTab === "Attachment" && (
   <div>
-    {/* Sub-tab buttons */}
-    {/* <div className="flex flex-wrap justify-center sm:justify-start gap-4 sm:gap-10 lg:gap-[150px] bg-blue-600 text-white rounded-t-md p-3 text-sm lg:text-base">
-  {["Client Service Form", "Turn-Over Documents"].map((tab) => (
-    <button
-      key={tab}
-      onClick={() => setSelectedAttachmentType(tab)}
-      className={`relative pb-2 px-3 font-semibold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-white rounded-sm ${
-        selectedAttachmentType === tab
-          ? "text-white after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-white"
-          : "opacity-70 hover:opacity-100"
-      }`}
-    >
-      {tab}
-    </button>
-  ))}
-</div> */}
-
-<div className="grid grid-cols-2 sm:flex sm:justify-between bg-blue-600 text-white px-4 py-2 gap-2">
-    {["Client Service Form", "Turn-Over Documents"].map((tab) => (
-      <button
-        key={tab}
-      onClick={() => setSelectedAttachmentType(tab)}
-        className={`w-full text-center px-4 py-2 font-semibold rounded-t-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white
-          ${
-            selectedAttachmentType === tab
-              ? "bg-white text-blue-600 shadow-md"
-              : "opacity-80 hover:opacity-100"
-          }`}
-      >
-        {tab}
-      </button>
-    ))}
-  </div>
-
-
-    {/* File table */}
-    {selectedAttachmentType && (
-      <div className="bg-blue-100 rounded-b-md p-4">
-    {/* Add File Button */}
-    <div className="text-right mb-4">
-      <button
-        onClick={() => handleAddFileClick('clientService')}
-        className="inline-flex items-center px-4 py-2 bg-blue-600 border border-gray-300 rounded shadow-sm hover:bg-blue-700 transition"
-      >
-        <FaPlus className="text-gray-100 mr-2" />
-        <span className="font-semibold text-gray-100">Add New File</span>
-      </button>
+    <div className="grid grid-cols-2 sm:flex sm:justify-between bg-blue-600 text-white px-2 py-2 gap-2">
+      {["Client Service Form", "Turn-Over Documents"].map((tab) => (
+        <button
+          key={tab}
+          onClick={() => {
+            setSelectedAttachmentType(tab);
+            // Force a refresh of the files when switching tabs
+            fetchClientFiles();
+          }}
+          className={`w-full text-center px-2 py-2 font-semibold rounded-t-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white
+            ${
+              selectedAttachmentType === tab
+                ? "bg-white text-blue-600 shadow-md"
+                : "opacity-80 hover:opacity-100"
+            }`}
+        >
+          {tab}
+        </button>
+      ))}
     </div>
 
+    {/* Client Service Form Tab Content */}
+    {selectedAttachmentType === "Client Service Form" && (
+      <div className="bg-blue-100 rounded-b-md p-4">
+        <div className="text-right mb-4">
+          <button
+            onClick={() => handleAddFileClick("clientServiceForm")}
+            className="inline-flex items-center px-4 py-2 bg-blue-600 border border-gray-300 rounded shadow-sm hover:bg-blue-700 transition"
+          >
+            <FaPlus className="text-gray-100 mr-2" />
+            <span className="font-semibold text-gray-100">Add New File</span>
+          </button>
+        </div>
         
-    <div className="overflow-x-auto rounded-xl shadow">
-      <table className="min-w-full bg-white border border-gray-300 text-sm">
-        <thead className="bg-blue-500 text-gray-100 sticky top-0 z-10">
-          <tr>
+        <div className="overflow-x-auto rounded-xl shadow">
+          <table className="min-w-full bg-white border border-gray-300 text-sm">
+            <thead className="bg-blue-500 text-gray-100 sticky top-0 z-10">
+              <tr>
                 <th className="p-3 text-left whitespace-nowrap">File Name</th>
                 <th className="p-3 text-left whitespace-nowrap">Upload Date</th>
                 <th className="p-3 text-left whitespace-nowrap">Signed Date</th>
@@ -2947,8 +3109,8 @@ const currentContract = clientcontracts[activeTopTab]?.[0] || {};
             </thead>
             <tbody>
               {clientServiceFiles.map((file) => (
-                <tr
-                  key={file.file_id}
+                <tr 
+                  key={`csf-${file.id || file.file_id || Math.random()}`}
                   className="border-b hover:bg-blue-50 transition"
                 >
                   <td className="p-3 whitespace-nowrap">{file.original_name}</td>
@@ -2985,6 +3147,89 @@ const currentContract = clientcontracts[activeTopTab]?.[0] || {};
                   </td>
                 </tr>
               ))}
+              {clientServiceFiles.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="p-4 text-center text-gray-500 italic">
+                    No Client Service Forms uploaded yet.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    )}
+
+    {/* Turn-over Documents Tab Content */}
+    {selectedAttachmentType === "Turn-Over Documents" && (
+      <div className="bg-blue-100 rounded-b-md p-4">
+        <div className="text-right mb-4">
+          <button
+            onClick={() => handleAddFileClick("turnOver")}
+            className="inline-flex items-center px-4 py-2 bg-blue-600 border border-gray-300 rounded shadow-sm hover:bg-blue-700 transition"
+          >
+            <FaPlus className="text-gray-100 mr-2" />
+            <span className="font-semibold text-gray-100">Add New File</span>
+          </button>
+        </div>
+        
+        <div className="overflow-x-auto rounded-xl shadow">
+          <table className="min-w-full bg-white border border-gray-300 text-sm">
+            <thead className="bg-blue-500 text-gray-100 sticky top-0 z-10">
+              <tr>
+                <th className="p-3 text-left whitespace-nowrap">File Name</th>
+                <th className="p-3 text-left whitespace-nowrap">Upload Date</th>
+                <th className="p-3 text-left whitespace-nowrap">Signed Date</th>
+                <th className="p-3 text-center whitespace-nowrap">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {turnOverFiles.map((file) => (
+                <tr 
+                  key={`to-${file.id || file.file_id || Math.random()}`}
+                  className="border-b hover:bg-blue-50 transition"
+                >
+                  <td className="p-3 whitespace-nowrap">{file.original_name}</td>
+                  <td className="p-3 whitespace-nowrap">
+                    {file.upload_date ? new Date(file.upload_date).toLocaleDateString() : 'N/A'}
+                  </td>
+                  <td className="p-2 whitespace-nowrap">
+                    {file.signed_date ? new Date(file.signed_date).toLocaleDateString() : 'N/A'}
+                  </td>
+                  <td className="p-2">
+                    <div className="flex justify-center gap-3">
+                      <button
+                        onClick={() => handleViewFile(file)}
+                        className="p-2 bg-blue-100 text-blue-600 hover:bg-blue-200 rounded-full transition"
+                        title="View"
+                      >
+                        <FaEye className="text-base" />
+                      </button>
+                      <button
+                        onClick={() => handleDownloadFile(file)}
+                        className="p-2 bg-green-100 text-green-600 hover:bg-green-200 rounded-full transition"
+                        title="Download"
+                      >
+                        <FaDownload className="text-base" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteFile(file)}
+                        className="p-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-full transition"
+                        title="Delete"
+                      >
+                        <FaTrash className="text-base" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {turnOverFiles.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="p-4 text-center text-gray-500 italic">
+                    No Turn-over Documents uploaded yet.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -3021,7 +3266,10 @@ const currentContract = clientcontracts[activeTopTab]?.[0] || {};
         </thead>
         <tbody>
           {smaInformationFiles.map((file) => (
-            <tr key={file.file_id} className="border-b hover:bg-blue-50">
+            <tr 
+    key={`sma-file-${file.file_id || file.id}`}
+    className="border-b hover:bg-blue-50"
+  >
               <td className="p-2">{file.original_name}</td>
               <td className="p-2">
                 {file.upload_date ? new Date(file.upload_date).toLocaleDateString() : 'N/A'}
@@ -3081,28 +3329,139 @@ const currentContract = clientcontracts[activeTopTab]?.[0] || {};
 )}
 
 
+
+      </div>
+      
         {/* Save Button */}
         <div className="flex justify-center mt-6">
-        <button
-  className="bg-blue-600 text-white font-semibold px-28 py-2 rounded-lg shadow-md hover:bg-blue-800 transition duration-300"
-  onClick={handleSave}
-  disabled={isSaving}
->
-  {isSaving ? (
-    <>
-      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-      </svg>
-      {isViewMode ? "UPDATING..." : "SAVING..."}
-    </>
-  ) : (
-    isViewMode ? "Update" : "Save"
-  )}
-</button>
+          <button
+            className="bg-blue-600 text-white font-semibold px-28 py-2 rounded-lg shadow-md hover:bg-blue-800 transition duration-300"
+            onClick={handleSave}
+            disabled={isSaving}
+          >
+            {isSaving ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                {isViewMode ? "UPDATING..." : "SAVING..."}
+              </>
+            ) : (
+              isViewMode ? "Update" : "Save"
+            )}
+          </button>
         </div>
+
+    </div>
+
+    {showModal && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+    <div className="bg-white rounded-xl shadow-lg w-[600px] max-h-[80vh] overflow-y-auto">
+      <div className="p-4 border-b flex justify-between items-center">
+        <h2 className="text-lg font-semibold text-blue-800">Clients</h2>
+        <button
+          onClick={() => setShowModal(false)}
+          className="text-gray-500 hover:text-red-500"
+        >
+          ✖
+        </button>
+      </div>
+
+      <div className="p-4">
+        {loading ? (
+  <div className="flex justify-center items-center py-10">
+    <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+  </div>
+) : (
+          <div className="overflow-auto">
+            <table className="w-full text-sm border border-collapse">
+              <thead className="bg-gray-100 sticky top-0 z-10">
+                <tr>
+                  <th className="p-2 border">Client Code</th>
+                  <th className="p-2 border">Client Name</th>
+                  <th className="p-2 border text-center">Action</th>
+                </tr>
+                <tr>
+                  <th className="p-1 border">
+                    <input
+                      type="text"
+                      placeholder="Search code..."
+                      className="w-full p-1 border rounded text-xs"
+                      onChange={(e) => {
+                        const code = e.target.value.toLowerCase();
+                        const name = searchName.toLowerCase();
+                        setSearchCode(code);
+                        setFilteredClients(
+                          clients.filter((c) =>
+                            c.client_code.toLowerCase().includes(code) &&
+                            c.client_name.toLowerCase().includes(name)
+                          )
+                        );
+                      }}
+                    />
+                  </th>
+                  <th className="p-1 border">
+                    <input
+                      type="text"
+                      placeholder="Search name..."
+                      className="w-full p-1 border rounded text-xs"
+                      onChange={(e) => {
+                        const name = e.target.value.toLowerCase();
+                        const code = searchCode.toLowerCase();
+                        setSearchName(name);
+                        setFilteredClients(
+                          clients.filter((c) =>
+                            c.client_code.toLowerCase().includes(code) &&
+                            c.client_name.toLowerCase().includes(name)
+                          )
+                        );
+                      }}
+                    />
+                  </th>
+                  <th className="p-1 border"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredClients.map((c, idx) => (
+                  <tr key={idx} className="hover:bg-gray-100">
+                    <td className="p-2 border">{c.client_code}</td>
+                    <td className="p-2 border">{c.client_name}</td>
+                    <td className="p-2 border text-center">
+                      <button
+                        onClick={() => {
+                          setClient((prev) => ({
+                            ...prev,
+                            parentCompanyCode: c.client_code,
+                            parentCompanyName: c.client_name,
+                          }));
+                          setShowModal(false);
+                        }}
+                        className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+                      >
+                        Select
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {filteredClients.length === 0 && (
+                  <tr>
+                    <td colSpan="3" className="text-center p-4 text-gray-500">
+                      No clients found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
+  </div>
+)}
+
+
+
     </div>
   );
 };

@@ -57,9 +57,9 @@ const ClientsInformation = () => {
 
   // Sorting config, default by client_name ascending
   const [sortConfig, setSortConfig] = useState({
-    key: "client_name",
-    direction: "asc",
-  });
+  key: "client_code", // Changed from "client_name"
+  direction: "asc",
+});
 
   useEffect(() => {
     fetchClients();
@@ -106,12 +106,12 @@ const ClientsInformation = () => {
   };
 
   const requestSort = (key) => {
-    let direction = "asc";
-    if (sortConfig.key === key && sortConfig.direction === "asc") {
-      direction = "desc";
-    }
-    setSortConfig({ key, direction });
-  };
+  let direction = "asc";
+  if (sortConfig.key === key && sortConfig.direction === "asc") {
+    direction = "desc";
+  }
+  setSortConfig({ key, direction });
+};
 
   const getSortIcon = (key) => {
     if (sortConfig.key !== key) return faSort;
@@ -125,34 +125,34 @@ const ClientsInformation = () => {
 
   if (showAddClientForm) return <AddClientForm />;
 
-  // Memoized sorted clients
   const sortedClients = useMemo(() => {
-    if (!Array.isArray(filteredClients)) return [];
-    return [...filteredClients].sort((a, b) => {
-      const aValue = a[sortConfig.key];
-      const bValue = b[sortConfig.key];
-      if (aValue === undefined || aValue === null) return 1;
-      if (bValue === undefined || bValue === null) return -1;
+  if (!Array.isArray(filteredClients)) return [];
+  
+  return [...filteredClients].sort((a, b) => {
+    const aValue = a[sortConfig.key];
+    const bValue = b[sortConfig.key];
+    const aCode = a.client_code;
+    const bCode = b.client_code;
 
-      if (typeof aValue === "string" && typeof bValue === "string") {
-        return sortConfig.direction === "asc"
-          ? aValue.localeCompare(bValue)
-          : bValue.localeCompare(aValue);
-      } else {
-        return sortConfig.direction === "asc"
-          ? aValue < bValue
-            ? -1
-            : aValue > bValue
-            ? 1
-            : 0
-          : aValue > bValue
-          ? -1
-          : aValue < bValue
-          ? 1
-          : 0;
-      }
-    });
-  }, [filteredClients, sortConfig]);
+    if (aValue === undefined || aValue === null) return 1;
+    if (bValue === undefined || bValue === null) return -1;
+
+    let comparison = 0;
+    
+    if (typeof aValue === "string" && typeof bValue === "string") {
+      comparison = aValue.localeCompare(bValue);
+    } else {
+      comparison = aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+    }
+
+    // Only do secondary sort if primary sort is equal
+    if (comparison === 0 && sortConfig.key !== "client_code") {
+      comparison = aCode.localeCompare(bCode);
+    }
+
+    return sortConfig.direction === "asc" ? comparison : -comparison;
+  });
+}, [filteredClients, sortConfig]);
 
   const totalPages = useMemo(() => {
     return Math.ceil(sortedClients.length / itemsPerPage);

@@ -70,7 +70,7 @@ const handleSubmit = async (e) => {
                     <img src="naysa_logo.png" alt="Logo" className="w-200 h-20 mb-3" />
                     
                     <h2 className="text-white m-1" style={{ fontFamily: 'SF Pro Rounded, sans-serif' }}>
-                        NAYSA Databridge
+                        NAYSA Customer Relations Management
                     </h2>
                     <h2 className="text-4xl font-bold mb-5 text-white" style={{ fontFamily: 'SF Pro Rounded, sans-serif' }}>
                         Welcome Back!
