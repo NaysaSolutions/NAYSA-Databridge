@@ -38,6 +38,7 @@ const [clientcontracts, setClientContracts] = useState({});
 const [isEditingHelpdesk, setIsEditingHelpdesk] = useState(false);
 
 const toggleFields = [
+  { label: "Installed", key: "installed" },
   { label: "CAS", key: "cas" },
   { label: "EIS", key: "eis" },
   { label: "Live", key: "live" },
@@ -47,10 +48,10 @@ const toggleFields = [
 ];
 
 const toggleVisibilityMap = {
-  "FINANCIALS": ["cas", "eis", "live", "with_sma", "fs_live", "active"],
-  "HR-PAY": ["live", "with_sma", "active"],
-  "REALTY": ["live", "with_sma", "active"],
-  "WMS": ["live", "with_sma", "active"],
+  "FINANCIALS": ["installed","cas", "eis", "live", "with_sma", "fs_live", "active"],
+  "HR-PAY": ["installed","live", "with_sma", "active"],
+  "REALTY": ["installed","live", "with_sma", "active"],
+  "WMS": ["installed","live", "with_sma", "active"],
   // add other tabs as needed
 };
 
@@ -82,6 +83,7 @@ const [searchTerm, setSearchTerm] = useState('')
   
 
 const mapTogglesToYN = (toggles) => ({
+  installed: toggles.cas ? "Y" : "N",
   cas: toggles.cas ? "Y" : "N",
   eis: toggles.eis ? "Y" : "N",  // Add this line
   live: toggles.live ? "Y" : "N",
@@ -285,6 +287,7 @@ const [loading, setLoading] = useState(false);
 
 
 const initialToggleState = {
+  installed: false,
   cas: false,
   eis: false,
   live: false,
@@ -437,6 +440,7 @@ useEffect(() => {
   setToggles(prev => ({
     ...prev,
     [activeTopTab]: {
+      installed: contract.installed === "Y",
       cas: contract.cas === "Y",
       fs_live: contract.fs_live === "Y",
       live: contract.live === "Y",
@@ -453,6 +457,7 @@ useEffect(() => {
   const fetchClientFiles = async () => {
   try {
     const apiBase = 'http://Server1:82/api';
+    // const apiBase = BASE_URL;
 
     const [csResponse, toResponse, smaResponse] = await Promise.all([
       fetch(`${apiBase}/client-files/${client.client_code}/clientService`, {
@@ -495,6 +500,7 @@ useEffect(() => {
   setIsLoading(true);
 
   const apiBase = 'http://Server1:82/api';
+    // const apiBase = BASE_URL;
 
   try {
     const token = localStorage.getItem('token');
@@ -574,6 +580,7 @@ useEffect(() => {
     setToggles(prev => ({
       ...prev,
       [appType]: {
+        installed: contractForAppType?.installed === "Y",
         cas: contractForAppType?.cas === "Y",
         eis: contractForAppType?.eis === "Y",
         fs_live: contractForAppType?.fs_live === "Y",
@@ -620,6 +627,7 @@ useEffect(() => {
         live: c.live || 'N',
         with_sma: c.with_sma || 'N',
         fs_live: c.fs_live || 'N',
+        installed: c.installed || 'N',
         active: c.active || 'N',
         sma_days: Number(c.sma_days) || 0,
         sma_consumed: Number(c.sma_consumed) || 0,
@@ -742,6 +750,7 @@ useEffect(() => {
       ...prev,
       [activeTopTab]: {
         ...prev[activeTopTab], // preserve previous toggle state
+        installed: contract.installed === "Y",
         cas: contract.cas === "Y",
         eis: contract.eis === "Y",
         live: contract.live === "Y",
@@ -1028,6 +1037,7 @@ const handleDeleteFile = async (file) => {
     'live',
     'with_sma',
     'fs_live',
+    'installed',
     'active',
     'sma_days',
     'sma_consumed',
@@ -1042,6 +1052,7 @@ const handleDeleteFile = async (file) => {
     setClientContracts(prev => {
       const currentContracts = prev[activeTopTab] || [{
         app_type: activeTopTab,
+        installed: "N",
         cas: "N",
         live: "N",
         with_sma: "N",
@@ -1074,7 +1085,7 @@ const handleDeleteFile = async (file) => {
       }
 
       // For toggles stored as "Y"/"N", normalize values here if needed
-      if (['cas', 'live', 'with_sma', 'fs_live', 'active'].includes(name)) {
+      if (['insta;;ed','cas', 'live', 'with_sma', 'fs_live', 'active'].includes(name)) {
         // Optional: allow "Y"/"N" toggle or from checkbox (true/false)
         if (type === 'checkbox') {
           updatedValue = checked ? "Y" : "N";
@@ -1129,6 +1140,7 @@ const syncTogglesToContracts = () => {
     // Generate new contract data with toggles
     const newContract = {
       ...updated[activeTopTab]?.[0], // existing contract
+      installed: currentToggles.cas ? "Y" : "N",
       cas: currentToggles.cas ? "Y" : "N",
       eis: currentToggles.eis ? "Y" : "N",
       live: currentToggles.live ? "Y" : "N",
@@ -1245,6 +1257,7 @@ const handleSave = async () => {
       numberOfEmployees: Number(currentContract.numberOfEmployees) || 0,
       contract_date: formatDate(currentContract.contract_date),
       sma_date: formatDate(currentContract.sma_date),
+      installed: currentContract.installed || 'N',
       cas: currentContract.cas || 'N',
       eis: currentContract.eis || 'N',
       live: currentContract.live || 'N',
