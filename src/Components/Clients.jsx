@@ -66,23 +66,28 @@ const ClientsInformation = () => {
   }, []);
 
   const fetchClients = async () => {
-    try {
-      const response = await GetAPI("getClients");
-      const data = response.data.data; // Laravel wraps results in `data`
+  try {
+    const response = await GetAPI("getClients");
+    console.log("API response:", response);
 
-      if (Array.isArray(data)) {
-        setClients(data);
-        setFilteredClients(data);
-      } else {
-        console.error("Expected array but got:", data);
-      }
+    const data = response?.data?.data?.clients;
 
-      setLoading(false);
-    } catch (error) {
-      console.error("Error fetching clients:", error);
-      setLoading(false);
+    if (Array.isArray(data)) {
+      setClients(data);
+      setFilteredClients(data);
+    } else {
+      console.error("Expected array but got:", data);
     }
-  };
+
+    setLoading(false);
+  } catch (error) {
+    console.error("Error fetching clients:", error);
+    setLoading(false);
+  }
+};
+
+
+
 
   const handleSearchChange = (e, key) => {
     const value = e.target.value.toLowerCase();
