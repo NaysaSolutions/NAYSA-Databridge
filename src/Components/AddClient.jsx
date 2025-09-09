@@ -205,7 +205,7 @@ const handleModuleToggle = (module) => {
 useEffect(() => {
   const fetchIndustries = async () => {
     try {
-      const response = await axios.get('http://Server1:82/api/client-industries', {
+      const response = await axios.get('/api/client-industries', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -267,7 +267,7 @@ const removeTechnicianInput = (index) => {
   client_code: "",
   client_name: "",
   main_address: "",
-  // contract_date: "",
+  contract_date: "",
   industry: "",
   remote_id: "",
   remote_pw: "",
@@ -306,7 +306,6 @@ const [toggles, setToggles] = useState({
 
 
   const technicians = [
-    "France Rosimo",
     "Danica Castillo",
     "Anjeaneth Alarcon",
     "Arvee Aurelio",
@@ -316,7 +315,6 @@ const [toggles, setToggles] = useState({
   
   const technicianCodeMap = {
     "Danica Castillo": "DGC",
-    "France Rosimo": "FLR",
     "Anjeaneth Alarcon": "MAA",
     "Arvee Aurelio": "AGA",
     "Jomel Mendoza": "JBM",
@@ -325,7 +323,6 @@ const [toggles, setToggles] = useState({
 
   const codeToTechnicianMap = {
     "DGC": "Danica Castillo",
-    "FLR": "France Rosimo",
     "MAA": "Anjeaneth Alarcon",
     "AGA": "Arvee Aurelio",
     "JBM": "Jomel Mendoza",
@@ -456,7 +453,7 @@ useEffect(() => {
 
   const fetchClientFiles = async () => {
   try {
-    const apiBase = 'http://Server1:82/api';
+    const apiBase = '/api';
     // const apiBase = BASE_URL;
 
     const [csResponse, toResponse, smaResponse] = await Promise.all([
@@ -499,7 +496,7 @@ useEffect(() => {
   console.log('[fetchClientData] Fetching data for client:', clientCode, appType);
   setIsLoading(true);
 
-  const apiBase = 'http://Server1:82/api';
+  const apiBase = '/api';
     // const apiBase = BASE_URL;
 
   try {
@@ -513,6 +510,9 @@ useEffect(() => {
       'Authorization': `Bearer ${token}`,
       'Accept': 'application/json'
     };
+
+
+    
 
     const response = await fetch(`${apiBase}/load-client-data?client_code=${clientCode}&app_type=${appType}`, { headers });
 
@@ -532,7 +532,18 @@ useEffect(() => {
 
     const receivedTechnicians = data.technicians || [];
 
-    const filteredTechnicians = receivedTechnicians.filter(t => t.app_type === appType);
+    const appTypeMapping = {
+    "FINANCIALS": "FINANCIALS", 
+    "HR-PAY": "HR-PAY",
+    "REALTY": "REALTY",
+    "WMS": "WMS" 
+  };
+
+    const dbAppType = appTypeMapping[appType] || appType;
+
+  const filteredTechnicians = receivedTechnicians.filter(t => t.app_type === dbAppType);
+  
+  
 
     const technicianDisplayNames = filteredTechnicians.map(tech => {
       const name = Object.entries(technicianCodeMap).find(([_, c]) => c === tech.tech_code)?.[0] || tech.tech_code;
@@ -541,6 +552,14 @@ useEffect(() => {
 
     const clientData = data.clients || {};
     const contacts = data.client_contact || [];
+
+    // Transform the contact data to match your expected format
+  const contactPersons = contacts.map(contact => ({
+    contact_person: contact.contact_person || '',
+    position: contact.position || '',
+    contact_no: contact.contact_no || '',
+    email_add: contact.email_add || ''
+  }));
 
     const contracts = Array.isArray(data.client_contract)
       ? data.client_contract
@@ -558,7 +577,7 @@ useEffect(() => {
   return `${year}-${month}-${day}`;
 };
 
-    const contractsForAppType = contracts.filter(c => c.app_type === appType);
+    const contractsForAppType = contracts.filter(c => c.app_type === dbAppType);
     const contractForAppType = contractsForAppType.length > 0 ? contractsForAppType[0] : null;
 
     const formattedContractsForAppType = contractsForAppType.map(c => ({
@@ -610,6 +629,8 @@ useEffect(() => {
       release_no: clientData.release_no || '',
       effectivity_date: clientData.effectivity_date || '',
 
+
+      contact_persons: contactPersons.length > 0 ? contactPersons : [""],
       client_contract: contractsForAppType.map(c => ({
         app_type: c.app_type,
         training_days: Number(c.training_days) || 0,
@@ -676,7 +697,7 @@ useEffect(() => {
 
 const fetchDefaultClientCode = async () => {
   try {
-    const apiBase = 'http://Server1:82/api';
+    const apiBase = '/api';
 
     const response = await fetch(`${apiBase}/clients/default-code`, {
       headers: {
@@ -789,7 +810,7 @@ useEffect(() => {
   const handleFileSelect = async (files, uploadDate, signedDate) => {
   if (files.length === 0) return { success: false, message: 'No files selected' };
 
-  const apiBase = 'http://Server1:82/api';
+  const apiBase = '/api';
   setIsUploading(true);
   
   try {
@@ -854,7 +875,7 @@ useEffect(() => {
       const result = await uploadResponse.json();
       
       results.push({
-  id: idData.file_id, // ✅ ADD THIS LINE
+  id: idData.file_id, 
   file_id: idData.file_id,
   original_name: file.name,
   upload_date: uploadDate,
@@ -931,7 +952,7 @@ const handleDeleteFile = async (file) => {
   if (!result.isConfirmed) return;
 
   try {
-    const response = await axios.delete(`http://Server1:82/api/files/${file.file_id}`);
+    const response = await axios.delete(`/api/files/${file.file_id}`);
     if (response.data.success) {
       Swal.fire('Deleted!', response.data.message, 'success');
       fetchClientFiles(); // Refresh list
@@ -949,7 +970,7 @@ const handleDeleteFile = async (file) => {
   const handleViewFile = async (file) => {
 
     const getApiBase = () => {
-      return 'http://Server1:82/api';
+      return '/api';
     };
 
     try {
@@ -982,7 +1003,7 @@ const handleDeleteFile = async (file) => {
   
   const handleDownloadFile = async (file) => {
     const getApiBase = () => {
-      return 'http://Server1:82/api';
+      return '/api';
     };
     
     try {
@@ -990,9 +1011,9 @@ const handleDeleteFile = async (file) => {
       
       // First verify file exists
       const verifyResponse = await fetch(`${apiBase}/files/verify/${file.file_id || file.id}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+        // headers: {
+        //   'Authorization': `Bearer ${localStorage.getItem('token')}`
+        // }
       });
       
       if (!verifyResponse.ok) {
@@ -1312,7 +1333,7 @@ const handleSave = async () => {
     };
 
     // 8. API Call
-    const apiBase = 'http://Server1:82/api';
+    const apiBase = '/api';
     const response = await axios.post(`${apiBase}/client/save`, payload, {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -1342,12 +1363,19 @@ const handleSave = async () => {
 };
 
 const updateContactField = (index, field, value) => {
-  setClient(prev => {
-    const updated = [...(prev.contact_persons || [])];
-    updated[index] = { ...updated[index], [field]: value };
-    return { ...prev, contact_persons: updated };
+  setClient((prevClient) => {
+    const updatedContacts = [...prevClient.contact_persons];
+    updatedContacts[index] = {
+      ...updatedContacts[index],
+      [field]: value,
+    };
+    return {
+      ...prevClient,
+      contact_persons: updatedContacts,
+    };
   });
 };
+
 
 const addNewContact = () => {
   setClient(prev => ({
@@ -2955,7 +2983,8 @@ const currentContract = clientcontracts[activeTopTab]?.[0] || {};
 
     {/* Contact inputs */}
     {(client.contact_persons || []).map((person, index) => (
-  <div key={`contact-${index}-${person.contact_person || 'new'}`} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_1fr_auto] gap-2 border p-2 rounded shadow-sm items-center bg-white text-sm">
+  <div key={`contact-${index}`}
+ className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_1fr_auto] gap-2 border p-2 rounded shadow-sm items-center bg-white text-sm">
         <input
           type="text"
           value={person.contact_person || ''}

@@ -66,23 +66,34 @@ const ClientsInformation = () => {
   }, []);
 
   const fetchClients = async () => {
-    try {
-      const response = await GetAPI("getClients");
-      const data = response.data.data; // Laravel wraps results in `data`
+  try {
+    const response = await GetAPI("getClients");
+    console.log("API response:", response);
 
-      if (Array.isArray(data)) {
-        setClients(data);
-        setFilteredClients(data);
-      } else {
-        console.error("Expected array but got:", data);
-      }
+    // Your clients are directly in response.data
+    const data = response.data.map(transformClientData);
+setClients(data);
+setFilteredClients(data);
 
-      setLoading(false);
-    } catch (error) {
-      console.error("Error fetching clients:", error);
-      setLoading(false);
+
+    if (Array.isArray(data)) {
+      setClients(data);
+      setFilteredClients(data);
+    } else {
+      console.error("Expected array but got:", data);
     }
-  };
+
+    setLoading(false);
+  } catch (error) {
+    console.error("Error fetching clients:", error);
+    setLoading(false);
+  }
+};
+
+
+
+
+
 
   const handleSearchChange = (e, key) => {
     const value = e.target.value.toLowerCase();
@@ -104,6 +115,26 @@ const ClientsInformation = () => {
     setFilteredClients(filtered);
     setCurrentPage(1);
   };
+
+  const transformClientData = (client) => {
+  const transformed = { ...client };
+
+  // Map flat fields into app-specific keys
+  appTypes.forEach((appType) => {
+    statuses.forEach((status) => {
+      if (status === "sma") {
+        transformed[`${appType}_${status}`] = client.with_sma;
+      } else {
+        transformed[`${appType}_${status}`] = client[status];
+      }
+    });
+  });
+
+  return transformed;
+};
+
+  
+
 
   const requestSort = (key) => {
   let direction = "asc";
