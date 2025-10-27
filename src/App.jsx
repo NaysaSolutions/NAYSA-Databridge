@@ -1,250 +1,30 @@
-// // App.js
-// import React, { useState } from 'react';
-// import Authentication from './Auth/Authentication';
-// import ChildComponent from './Context API/ChildComponent';
-// import MyContext from './Context API/Context';
-
-// function App() {
-
-//   <Authentication/>
-//    const [theme, setTheme] = useState('Dark');
-
-//    return (
-//      <MyContext.Provider value={{ theme, setTheme }}>
-//       <div
-//          className={`min-h-screen flex justify-center items-center transition-colors duration-300 ${
-//            theme === 'Light' ? 'bg-white text-black' : 'bg-gray-800 text-white'
-//          }`}
-//        >
-//        <ChildComponent />
-//        </div>
-//      </MyContext.Provider>
-//    );
-// }
-
-//  export default App;
-
-
+// src/App.jsx
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "./Authentication/AuthContext"; // Import AuthProvider
-import Login from "./Authentication/Login";
-import Register from "./Authentication/Register";
-import Layout from "./Layout";
-import Dashboard from "./Components/Dashboard";
-import ForgotPassword from "./Authentication/ForgotPassword";
-import Clients from "./Components/Clients";
-import ClientsFinancials from "./Components/ClientsFinancials";
-import ClientsPayroll from "./Components/ClientsPayroll";
-import AddClients from "./Components/AddClient";
+import ReactDOM from "react-dom/client";
+import { BrowserRouter /* or HashRouter for IIS */ } from "react-router-dom";
 
-function App() {
+// adjust paths as needed
+import Navbar from "./Recruitment/Navbar.jsx";   // avoid spaces in folder names
+import ApplicantMasterData from "./Recruitment/ApplicantMasterData.jsx";
+import "./index.css";
+
+function AppShell() {
   return (
-    <AuthProvider> {/* Wrap everything inside AuthProvider */}
-      <Router>
-        <Routes>
-          <Route path="/" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
-          <Route path="/clients" element={<Layout><Clients /></Layout>} />
-          <Route path="/clientsfinancials" element={<Layout><ClientsFinancials /></Layout>} />
-          <Route path="/clientspayroll" element={<Layout><ClientsPayroll /></Layout>} />
-          <Route path="/Addclients" element={<Layout><AddClients /></Layout>} />
-        </Routes>
-      </Router>
-    </AuthProvider>
+    <div className="min-h-screen bg-background text-foreground bg-gray-100 ">
+      <Navbar />
+      <div className="mx-auto w-full max-w-[1500px] px-3 md:px-6 py-4">
+        <ApplicantMasterData />
+      </div>
+    </div>
   );
 }
 
-export default App;
-
-
-
-
-
-// import React from 'react';
-// import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-// import EmployeeForm from './Components/EmployeeForm';
-// import EmployeeList from './Components/EmployeeList';
-// import Authentication from './Auth/Authentication';
-// import PrivateRoute from './Auth/PrivateRoute';
-
-// function App() {
-//   return (
-//     <Router>
-//       <Routes>
-//         {/* Default route to show the authentication page */}
-//         <Route path="/" element={<Navigate to="/authentication" replace />} />
-        
-//         {/* Authentication page */}
-//         <Route path="/authentication" element={<Authentication />} />
-        
-//         {/* Private routes */}
-//         <Route path="/form" element={<PrivateRoute element={<EmployeeForm />} />} />
-//         <Route path="/employees" element={<PrivateRoute element={<EmployeeList />} />} />
-//       </Routes>
-//     </Router>
-//   );
-// }
-
-// export default App;
-
-//App.js
-// import React from "react";
-// import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-// import Header from "./header"; // Import Header globally
-// import ReceivingReport from "./receivingReport";
-// import ReceivingReportHistory from "./receivingReportHistory";
-
-// const App = () => {
-//   return (
-//     <Router>
-//       {/* Global Header */}
-//       <Header />
-
-//       {/* Page Content */}
-//       <Routes>
-//         <Route path="/" element={<ReceivingReport />} />
-//         <Route path="/history" element={<ReceivingReportHistory />} />
-//       </Routes>
-//     </Router>
-//   );
-// };
-
-// export default App;
-
-
-
-
-// import React from "react";
-// import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-// import { AuthProvider, useAuth } from "./EMPLOYEE PORTAL/AuthContext";
-// import Sidebar from "./EMPLOYEE PORTAL/Sidebar";
-// import Navbar from "./EMPLOYEE PORTAL/Navbar";
-// import Dashboard from "./EMPLOYEE PORTAL/Dashboard";
-// import LoginPortal from "./EMPLOYEE PORTAL/LoginPortal";
-
-// const App = () => {
-//   return (
-//     <AuthProvider>
-//       <Router>
-//         <Routes>
-//           <Route path="/" element={<LoginPortal />} />
-//           <Route path="/dashboard" element={<ProtectedRoute><MainApp /></ProtectedRoute>} />
-//         </Routes>
-//       </Router>
-//     </AuthProvider>
-//   );
-// };
-
-// const MainApp = () => (
-//   <div className="flex">
-//     <Sidebar />
-//     <div className="flex-grow">
-//       <Navbar />
-//       <Dashboard />
-//     </div>
-//   </div>
-// );
-
-// const ProtectedRoute = ({ children }) => {
-//   const { user } = useAuth();
-//   return user ? children : <Navigate to="/" />;
-// };
-
-// export default App;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// // src/App.jsx
-// import React from 'react';
-// import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-// import EmployeeList from './Components/EmployeeList';
-// import EmployeeForm from './Components/EmployeeForm';
-// //import Button from './Components/Button';
-
-// const App = () => {
-//   return (
-//     // <Button/>
-//     <Router>
-//       <div className="max-w-4xl mx-auto p-6">
-//         <Routes>
-//           <Route path="/" element={<EmployeeList />} />
-//           <Route path="/add" element={<EmployeeForm />} />
-//           <Route path="/edit/:id" element={<EmployeeForm />} />
-//         </Routes>
-//       </div>
-//     </Router>
-//   );
-// };
-
-// export default App;
+// === BOOTSTRAP HERE (no separate main.jsx) ===
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <BrowserRouter>
+    <AppShell />
+  </BrowserRouter>
+);
+
+// (Optional) also export if you want to import AppShell elsewhere
+export default AppShell;
